@@ -1,36 +1,141 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Resume Screening & Skill Gap Analyzer
 
-## Getting Started
+## Overview
 
-First, run the development server:
+AI Resume Screening & Skill Gap Analyzer is a web-based recruitment assistance platform that uses hybrid AI techniques to:
 
-```bash
+- Parse resumes
+- Extract technical skills
+- Compare candidates against job descriptions
+- Generate match scores
+- Identify skill gaps
+- Provide improvement recommendations
+
+The system is designed as a decision-support tool for HR professionals.
+
+---
+
+## Tech Stack
+
+Frontend:
+- Next.js (App Router)
+- Tailwind CSS
+- TypeScript
+
+Backend:
+- Next.js API Routes
+- Prisma ORM
+
+Database:
+- PostgreSQL
+
+AI:
+- Local LLM (Ollama - Llama 3 / Mistral)
+- Sentence Transformers (Embeddings)
+- Cosine Similarity Matching
+
+Authentication:
+- JWT-based authentication
+
+---
+
+## Core Features
+
+### HR Role
+- Create job postings
+- Define required skills
+- View ranked candidate list
+- Analyze match scores
+- View skill gap breakdown
+
+### Candidate Role
+- Upload resume
+- View extracted skills
+- See job match percentage
+- Receive skill improvement suggestions
+
+### Admin Role
+- Manage users
+- Manage skill dictionary
+- Monitor system activity
+
+---
+
+## AI Workflow
+
+1. Resume Upload
+2. Resume text extraction
+3. LLM-based skill extraction
+4. Job description parsing
+5. Embedding generation
+6. Cosine similarity scoring
+7. Skill gap analysis
+8. Feedback generation
+
+The system uses LLM for structured extraction and explanation.
+Scoring is deterministic and explainable.
+
+---
+
+## Installation
+
+### 1. Clone Repository
+
+git clone <repository-url>
+cd project-name
+
+---
+
+### 2. Install Dependencies
+
+npm install
+
+---
+
+### 3. Setup Environment Variables
+
+Create a `.env` file:
+
+DATABASE_URL="postgresql://user:password@localhost:5432/ai_hr"
+JWT_SECRET="your_secret_key"
+
+---
+
+### 4. Setup Database
+
+npx prisma migrate dev
+
+---
+
+### 5. Run Development Server
+
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+/app
+  /api
+  /dashboard
+/lib
+/services
+/prisma
+  schema.prisma
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Future Enhancements
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Skill demand forecasting
+- Advanced ranking algorithm
+- Bias detection module
+- Resume auto-improvement assistant
+- Batch resume processing
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## Disclaimer
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This system is intended as a recruitment assistance tool.
+It does not replace human hiring decisions.
