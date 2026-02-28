@@ -12,3 +12,39 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum Role {
+  HR
+  CANDIDATE
+  ADMIN
+}
+
+model User {
+  id         String       @id @default(nanoid())
+  email      String       @unique
+  password   String
+  username   String       @unique
+  Role       Role
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  jobs       Job[]
+  candidates Candidates[]
+}
+
+model Job {
+  id              String   @id @default(nanoid())
+  hr              User     @relation(fields: [hrId], references: [id]) // Relation to User
+  hrId            String // Foreign key to User
+  title           String
+  description     String
+  required_skills Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Candidates {
+  id          String   @id @default(nanoid())
+  candidate   User     @relation(fields: [candidateId], references: [id]) // Relation to User
+  candidateId String // Foreign key to User
+  createdAt   DateTime @default(now())
+}
