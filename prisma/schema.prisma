@@ -20,31 +20,102 @@ enum Role {
 }
 
 model User {
-  id         String       @id @default(nanoid())
-  email      String       @unique
-  password   String
-  username   String       @unique
-  Role       Role
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
-  jobs       Job[]
-  candidates Candidates[]
+  id        String   @id @default(nanoid())
+  email     String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+
+  hrProfile        HRProfile? // one-to-one relation to HRProfile
+  candidateProfile CandidateProfile? // one-to-one relation to CandidateProfile
+}
+
+model HRProfile {
+  id     String @id @default(nanoid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  jobs Job[]
+}
+
+model CandidateProfile {
+  id              String @id @default(nanoid())
+  userId          String @unique
+  user            User   @relation(fields: [userId], references: [id])
+  experienceYears Float?
+  resumes Resume[]
+  matches MatchResult[]
+}
+
+model Resume {
+  id          String           @id @default(nanoid())
+  candidateId String
+  candidate   CandidateProfile @relation(fields: [candidateId], references: [id]) //
+  rawText     String
+  extractedAt DateTime @default(now())
+  resumeSkills ResumeSkill[]
 }
 
 model Job {
-  id              String   @id @default(nanoid())
-  hr              User     @relation(fields: [hrId], references: [id]) // Relation to User
-  hrId            String // Foreign key to User
-  title           String
-  description     String
-  required_skills Json
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id   String    @id @default(nanoid())
+  hrId String
+  hr   HRProfile @relation(fields: [hrId], references: [id])
+  title         String
+  description   String
+  minExperience Float?
+  createdAt     DateTime @default(now())
+  jobSkills JobSkill[]
+  matches   MatchResult[]
 }
 
-model Candidates {
+model Skill {
+  id       String  @id @default(nanoid())
+  name     String  @unique
+  category String?
+  jobSkills     JobSkill[]
+  resumeSkills  ResumeSkill[]
+  missingSkills MissingSkill[]
+}
+
+model JobSkill {
+  id       String  @id @default(nanoid())
+  jobId    String
+  skillId  String
+  weight   Float   @default(1.0)
+  required Boolean @default(true)
+  job   Job   @relation(fields: [jobId], references: [id])
+  skill Skill @relation(fields: [skillId], references: [id])
+
+  @@unique([jobId, skillId])
+}
+
+model ResumeSkill {
+  id         String @id @default(nanoid())
+  resumeId   String
+  skillId    String
+  confidence Float? // optional AI confidence score
+  resume Resume @relation(fields: [resumeId], references: [id])
+  skill  Skill  @relation(fields: [skillId], references: [id])
+
+  @@unique([resumeId, skillId])
+}
+
+model MatchResult {
   id          String   @id @default(nanoid())
-  candidate   User     @relation(fields: [candidateId], references: [id]) // Relation to User
-  candidateId String // Foreign key to User
+  candidateId String
+  jobId       String
+  score       Float
   createdAt   DateTime @default(now())
+  candidate CandidateProfile @relation(fields: [candidateId], references: [id])
+  job       Job              @relation(fields: [jobId], references: [id])
+  missingSkills MissingSkill[]
+}
+
+model MissingSkill {
+  id            String  @id @default(nanoid())
+  matchResultId String
+  skillId       String
+  priority      String? // High / Medium / Low
+  matchResult MatchResult @relation(fields: [matchResultId], references: [id])
+  skill       Skill       @relation(fields: [skillId], references: [id])
 }
