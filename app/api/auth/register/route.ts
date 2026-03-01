@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-type RegisterRole = "HR" | "CANDIDATE"; // Define allowed roles for registration
-type UserRole = "HR" | "CANDIDATE" | "ADMIN"; // Define all possible user roles in the system (including ADMIN for future use)
+export type RegisterRole = "HR" | "CANDIDATE"; // Define allowed roles for registration
+export type UserRole = "HR" | "CANDIDATE" | "ADMIN"; // Define all possible user roles in the system (including ADMIN for future use)
 
 type RegisterRequestBody = {
   username: string;
