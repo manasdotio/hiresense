@@ -21,7 +21,7 @@ declare module "next-auth" {
 
 }
 
-delcare module "next-auth/jwt" {
+declare module "next-auth/jwt" {
   interface jwt {
     id?: string;
     email: string;
