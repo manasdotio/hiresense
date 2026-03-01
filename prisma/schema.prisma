@@ -39,39 +39,39 @@ model HRProfile {
 }
 
 model CandidateProfile {
-  id              String @id @default(nanoid())
-  userId          String @unique
-  user            User   @relation(fields: [userId], references: [id])
+  id              String        @id @default(nanoid())
+  userId          String        @unique
+  user            User          @relation(fields: [userId], references: [id])
   experienceYears Float?
-  resumes Resume[]
-  matches MatchResult[]
+  resumes         Resume[]
+  matches         MatchResult[]
 }
 
 model Resume {
-  id          String           @id @default(nanoid())
-  candidateId String
-  candidate   CandidateProfile @relation(fields: [candidateId], references: [id]) //
-  rawText     String
-  extractedAt DateTime @default(now())
+  id           String           @id @default(nanoid())
+  candidateId  String
+  candidate    CandidateProfile @relation(fields: [candidateId], references: [id]) //
+  rawText      String
+  extractedAt  DateTime         @default(now())
   resumeSkills ResumeSkill[]
 }
 
 model Job {
-  id   String    @id @default(nanoid())
-  hrId String
-  hr   HRProfile @relation(fields: [hrId], references: [id])
+  id            String        @id @default(nanoid())
+  hrId          String
+  hr            HRProfile     @relation(fields: [hrId], references: [id])
   title         String
   description   String
   minExperience Float?
-  createdAt     DateTime @default(now())
-  jobSkills JobSkill[]
-  matches   MatchResult[]
+  createdAt     DateTime      @default(now())
+  jobSkills     JobSkill[]
+  matches       MatchResult[]
 }
 
 model Skill {
-  id       String  @id @default(nanoid())
-  name     String  @unique
-  category String?
+  id            String         @id @default(nanoid())
+  name          String         @unique
+  category      String?
   jobSkills     JobSkill[]
   resumeSkills  ResumeSkill[]
   missingSkills MissingSkill[]
@@ -83,8 +83,8 @@ model JobSkill {
   skillId  String
   weight   Float   @default(1.0)
   required Boolean @default(true)
-  job   Job   @relation(fields: [jobId], references: [id])
-  skill Skill @relation(fields: [skillId], references: [id])
+  job      Job     @relation(fields: [jobId], references: [id])
+  skill    Skill   @relation(fields: [skillId], references: [id])
 
   @@unique([jobId, skillId])
 }
@@ -94,28 +94,28 @@ model ResumeSkill {
   resumeId   String
   skillId    String
   confidence Float? // optional AI confidence score
-  resume Resume @relation(fields: [resumeId], references: [id])
-  skill  Skill  @relation(fields: [skillId], references: [id])
+  resume     Resume @relation(fields: [resumeId], references: [id])
+  skill      Skill  @relation(fields: [skillId], references: [id])
 
   @@unique([resumeId, skillId])
 }
 
 model MatchResult {
-  id          String   @id @default(nanoid())
-  candidateId String
-  jobId       String
-  score       Float
-  createdAt   DateTime @default(now())
-  candidate CandidateProfile @relation(fields: [candidateId], references: [id])
-  job       Job              @relation(fields: [jobId], references: [id])
+  id            String           @id @default(nanoid())
+  candidateId   String
+  jobId         String
+  score         Float
+  createdAt     DateTime         @default(now())
+  candidate     CandidateProfile @relation(fields: [candidateId], references: [id])
+  job           Job              @relation(fields: [jobId], references: [id])
   missingSkills MissingSkill[]
 }
 
 model MissingSkill {
-  id            String  @id @default(nanoid())
+  id            String      @id @default(nanoid())
   matchResultId String
   skillId       String
   priority      String? // High / Medium / Low
-  matchResult MatchResult @relation(fields: [matchResultId], references: [id])
-  skill       Skill       @relation(fields: [skillId], references: [id])
+  matchResult   MatchResult @relation(fields: [matchResultId], references: [id])
+  skill         Skill       @relation(fields: [skillId], references: [id])
 }
