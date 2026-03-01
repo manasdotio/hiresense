@@ -86,11 +86,12 @@ export const authOptions: NextAuthOptions = {
     },
 
     async session({ session, token }) {
-      token.id = token.id;
-      token.email = token.email;
-      token.username = token.username;
-      token.fullname = token.fullname;
-      token.role = token.role;
+      if (session.user) {
+        session.user.id = token.id;
+        session.user.username = token.username;
+        session.user.fullname = token.fullname;
+        session.user.role = token.role;
+      }
       return session;
     },
   },

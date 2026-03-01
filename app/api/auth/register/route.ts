@@ -25,7 +25,9 @@ type SafeUserResponse = {
 // Parse request body (email, password, role, and any role-specific fields)
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as Partial<RegisterRequestBody> & { role?: string };
+    const body = (await request.json()) as Partial<RegisterRequestBody> & {
+      role?: string;
+    };
     const { email, password, role, username, fullname } = body;
 
     // Validate input (required fields, email format, password strength, valid role)
@@ -142,7 +144,14 @@ export async function POST(request: NextRequest) {
       createdAt: newUser.createdAt,
     };
 
-    return NextResponse.json(response, { status: 201 });
+    return NextResponse.json(
+      {
+        message: "Registeration successfully",
+        data: response,
+      },
+      { status: 201 },
+    );
+
   } catch (error) {
     console.error("Registration server error:", error);
 
