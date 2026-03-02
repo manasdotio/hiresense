@@ -1,15 +1,6 @@
 import "dotenv/config";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../generated/prisma/client";
-
-const connectionString = `${process.env.DATABASE_URL}`;
-
-if (!connectionString) {
-  throw new Error("DATABASE_URL is not set");
-}
-
-const adapter = new PrismaPg({ connectionString });
-const prisma = new PrismaClient({ adapter });
+import { ensureSkillsWithEmbeddings } from "@/lib/skillStore";
+import { prisma } from "@/lib/prisma";
 
 const coreSkills = [
   "Node.js",
@@ -55,17 +46,9 @@ const coreSkills = [
 ] as const;
 
 async function main() {
-  await Promise.all(
-    coreSkills.map((name) =>
-      prisma.skill.upsert({
-        where: { name },
-        update: {},
-        create: { name },
-      })
-    )
-  );
+  await ensureSkillsWithEmbeddings([...coreSkills]);
 
-  console.log(`Seeded ${coreSkills.length} skills.`);
+  console.log(`Seeded ${coreSkills.length} skills with embeddings.`);
 }
 
 main()

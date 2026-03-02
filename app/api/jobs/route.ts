@@ -1,18 +1,19 @@
- import { NextResponse, NextRequest } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { extractJobSkills } from "@/lib/jobExtractor";
+import { ensureSkillsWithEmbeddings } from "@/lib/skillStore";
 
 type CreateJobBody = {
   title: string;
   description: string;
   minExperience?: number;
-  skills: {
-    name: string;
-    required?: boolean;
-    weight?: number;
-  }[];
 };
+
+function normalizedSkillKey(name: string) {
+  return name.trim().replace(/\s+/g, " ").toLowerCase();
+}
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -26,13 +27,12 @@ export async function POST(request: NextRequest) {
 
   const body = (await request.json()) as CreateJobBody;
 
-  const { title, description, minExperience, skills } = body;
+  const { title, description, minExperience } = body;
 
-  if (!title || !description || minExperience === undefined || !skills) {
+  if (!title || !description) {
     return NextResponse.json(
       {
-        error:
-          "Missing required fields: title, description, minExperience, skills",
+        error: "Missing required fields: title, description",
       },
       { status: 400 },
     );
@@ -50,22 +50,53 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const extracted = await extractJobSkills(description);
+
+  const extractedRequired: string[] = Array.isArray(extracted?.required_skills)
+    ? extracted.required_skills.filter((name: unknown): name is string => typeof name === "string")
+    : [];
+
+  const extractedPreferred: string[] = Array.isArray(extracted?.preferred_skills)
+    ? extracted.preferred_skills.filter((name: unknown): name is string => typeof name === "string")
+    : [];
+
+  const requiredSkillNames = Array.from(new Set(extractedRequired));
+  const preferredSkillNames = Array.from(new Set(extractedPreferred));
+
+  const storedSkills = await ensureSkillsWithEmbeddings([
+    ...requiredSkillNames,
+    ...preferredSkillNames,
+  ]);
+
+  const requiredKeys = new Set(requiredSkillNames.map((name) => normalizedSkillKey(name)));
+  const resolvedByKey = new Map(
+    storedSkills.map((skill) => [normalizedSkillKey(skill.name), skill]),
+  );
+
+  const uniqueResolved = Array.from(resolvedByKey.values());
+
   const job = await prisma.job.create({
     data: {
       title,
       description,
-      minExperience,
+      minExperience: minExperience ?? extracted?.minExperience ?? 0,
       hrId: hrProfile.id,
       jobSkills: {
-        create: skills.map((s: any) => ({
-          skillId: s.skillId,
-          weight: s.weight ?? 1,
-          required: s.required ?? true,
+        create: uniqueResolved.map((skill) => ({
+          skillId: skill.id,
+          weight: 1,
+          required: requiredKeys.has(normalizedSkillKey(skill.name)),
         })),
       },
     },
     include: {
-      jobSkills: true,
+      jobSkills: {
+        include: {
+          skill: true,
+        },
+      },
     },
   });
+
+  return NextResponse.json(job, { status: 201 });
 }

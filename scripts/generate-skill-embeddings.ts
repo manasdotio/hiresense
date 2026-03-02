@@ -1,32 +1,14 @@
 import { prisma } from "@/lib/prisma";
-import { generateTextEmbedding } from "@/lib/llm";
-
-type SkillRow = {
-  id: string;
-  name: string;
-  embedding: string | null;
-};
+import { ensureSkillsWithEmbeddings } from "@/lib/skillStore";
 
 async function main() {
-  const skills = await prisma.$queryRaw<SkillRow[]>`
-    SELECT id, name, embedding::text AS embedding
-    FROM "Skill"
-  `;
+  const skills = await prisma.skill.findMany({
+    select: { name: true },
+  });
 
-  let generatedCount = 0;
+  await ensureSkillsWithEmbeddings(skills.map((skill) => skill.name));
 
-  for (const skill of skills) {
-    if (!skill.embedding) {
-      const embedding = await generateTextEmbedding(skill.name);
-      generatedCount += 1;
-      console.log(`Skill: ${skill.name}`);
-      console.log(`Embedding length: ${embedding.length}`);
-      console.log(`Preview: ${embedding.slice(0, 8).join(", ")}`);
-      console.log("---");
-    }
-  }
-
-  console.log(`Generated embeddings (not stored): ${generatedCount}`);
+  console.log(`Processed embeddings for ${skills.length} skills.`);
 }
 
 main()

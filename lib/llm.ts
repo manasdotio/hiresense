@@ -4,6 +4,25 @@ export const openai = new OpenAI({
   baseURL: process.env.OPENAI_BASE_URL ?? "http://localhost:1234/v1",
   apiKey: "lm-studio", // required but can be anything
 });
+
+function getConfiguredChatModel() {
+  return process.env.LLM_MODEL ?? process.env.CHAT_MODEL ?? "mistral-7b-instruct-v0.3";
+}
+
+async function createChatCompletion(model: string, content: string) {
+  return openai.chat.completions.create({
+    model,
+    temperature: 0,
+    max_tokens: 500,
+    messages: [
+      {
+        role: "user",
+        content,
+      },
+    ],
+  });
+}
+
 export async function callLLM(prompt: string) {
   const strictUserPrompt = `
 You are a strict JSON API.
@@ -15,17 +34,36 @@ No backticks.
 ${prompt}
 `;
 
-  const response = await openai.chat.completions.create({
-    model: "mistral-7b-instruct-v0.3",
-    temperature: 0,
-    max_tokens: 500,
-    messages: [
-      {
-        role: "user",
-        content: strictUserPrompt,
-      },
-    ],
-  });
+  const configuredModel = getConfiguredChatModel();
+  let response;
+
+  try {
+    response = await createChatCompletion(configuredModel, strictUserPrompt);
+  } catch (error) {
+    const openAIError = error as {
+      param?: string;
+      status?: number;
+      message?: string;
+    };
+
+    const modelLoadFailed =
+      openAIError?.status === 400 && openAIError?.param === "model";
+
+    if (!modelLoadFailed) {
+      throw error;
+    }
+
+    const models = await listLLMModels();
+    const fallbackModel = models[0];
+
+    if (!fallbackModel) {
+      throw new Error(
+        `Chat model '${configuredModel}' is unavailable and no fallback models were found on ${process.env.OPENAI_BASE_URL ?? "http://localhost:1234/v1"}. Load a chat model in LM Studio or set LLM_MODEL.`,
+      );
+    }
+
+    response = await createChatCompletion(fallbackModel, strictUserPrompt);
+  }
 
   const content = response.choices[0].message.content ?? "";
 
