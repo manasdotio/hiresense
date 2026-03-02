@@ -5,16 +5,21 @@ export async function extractJobSkills(description: string) {
   const prompt = `
 Extract only technical skills from this job description.
 
-Return strictly in this format:
+Rules:
+- Only include programming languages, frameworks, databases, cloud, dev tools
+- Exclude soft skills like communication, teamwork
+- Expand MERN/MEAN into individual tech
+- Separate required vs preferred
+- Extract minimum years of experience as number
+- If not mentioned return 0
+
+Return strictly valid JSON:
 
 {
   "required_skills": [],
   "preferred_skills": [],
+  "minExperience": number
 }
-
-Do not include explanations.
-Do not include markdown.
-Do not include text outside JSON.
 
 Job Description:
 ${description}

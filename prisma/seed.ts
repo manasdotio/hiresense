@@ -59,8 +59,8 @@ async function main() {
     coreSkills.map((name) =>
       prisma.skill.upsert({
         where: { name },
-        update: { category: "Core Tech" },
-        create: { name, category: "Core Tech" },
+        update: {},
+        create: { name },
       })
     )
   );

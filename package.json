@@ -9,7 +9,9 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "tsx prisma/seed.ts",
-    "db:seed": "npm run seed"
+    "db:seed": "npm run seed",
+    "skills:embed": "tsx scripts/generate-skill-embeddings.ts",
+    "skills:embed:check": "tsx scripts/generate-skill-embeddings.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.4.2",
