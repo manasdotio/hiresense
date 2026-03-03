@@ -1,24 +1,22 @@
 import { callLLM } from "./llm";
 
-export async function extractResumeSkills(rawResumeText: string) {
+export async function extractResumeData(rawResumeText: string) {
   const prompt = `
-Extract only technical skills from this job description.
+Extract only technical skills from this resume.
 
 Rules:
-- Only include programming languages, frameworks, databases, cloud, dev tools
-- Exclude soft skills like communication, teamwork
-- Expand MERN/MEAN into individual tech
-- Separate required vs preferred
-- Extract minimum years of experience as number
-- If not mentioned return 0
+Ignore soft skills.
+Ignore personality traits.
+Ignore generic words.
 
 Return strictly valid JSON:
 
 {
-  "skills": []
+  "skills": string[],
+  "experienceYears": number | null
 }
 
-Job Description:
+Resume text:
 ${rawResumeText}
 `;
 
