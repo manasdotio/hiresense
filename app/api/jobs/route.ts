@@ -11,6 +11,8 @@ type CreateJobBody = {
   minExperience?: number;
 };
 
+
+
 function normalizedSkillKey(name: string) {
   return name.trim().replace(/\s+/g, " ").toLowerCase();
 }
