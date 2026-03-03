@@ -71,9 +71,9 @@ model Job {
 }
 
 model Skill {
-  id            String   @id @default(nanoid())
-  name          String   @unique
-  embedding Unsupported("vector(768)")? 
+  id        String                      @id @default(nanoid())
+  name      String                      @unique
+  embedding Unsupported("vector(768)")?
 
   jobSkills     JobSkill[]
   resumeSkills  ResumeSkill[]

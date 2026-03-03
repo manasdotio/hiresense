@@ -7,6 +7,12 @@ type SkillRow = {
   embedding: string | null;
 };
 
+type SimilarSkillRow = {
+  id: string;
+  name: string;
+  similarity: number;
+};
+
 type StoredSkill = {
   id: string;
   name: string;
@@ -34,7 +40,46 @@ async function setSkillEmbedding(skillId: string, embedding: number[]) {
   `;
 }
 
+async function findNearestSkill(
+  embedding: number[],
+  minSimilarity: number,
+) {
+  if (!embedding.length) {
+    return null;
+  }
+
+  const vectorLiteral = `[${embedding.join(",")}]`;
+
+  const rows = await prisma.$queryRaw<SimilarSkillRow[]>`
+    SELECT
+      id,
+      name,
+      1 - (embedding <=> ${vectorLiteral}::vector) AS similarity
+    FROM "Skill"
+    WHERE embedding IS NOT NULL
+    ORDER BY embedding <=> ${vectorLiteral}::vector
+    LIMIT 1
+  `;
+
+  const best = rows[0];
+
+  if (!best) {
+    return null;
+  }
+
+  if (Number(best.similarity) < minSimilarity) {
+    return null;
+  }
+
+  return {
+    id: best.id,
+    name: best.name,
+  };
+}
+
 export async function ensureSkillsWithEmbeddings(skillNames: string[]) {
+  const minSimilarity = 0.78;
+
   const uniqueNames = Array.from(
     new Set(
       skillNames
@@ -69,15 +114,22 @@ export async function ensureSkillsWithEmbeddings(skillNames: string[]) {
       continue;
     }
 
+    const inputEmbedding = await generateTextEmbedding(inputName);
+
+    const nearest = await findNearestSkill(inputEmbedding, minSimilarity);
+
+    if (nearest) {
+      ensured.push(nearest);
+      continue;
+    }
+
     const created = await prisma.skill.create({
       data: { name: inputName },
       select: { id: true, name: true },
     });
 
-    const embedding = await generateTextEmbedding(created.name);
-    await setSkillEmbedding(created.id, embedding);
+    await setSkillEmbedding(created.id, inputEmbedding);
 
-    byKey.set(key, { id: created.id, name: created.name, embedding: "generated" });
     ensured.push(created);
   }
 
