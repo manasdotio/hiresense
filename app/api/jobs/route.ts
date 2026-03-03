@@ -1,9 +1,11 @@
-import { NextResponse, NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth/next";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { extractJobSkills } from "@/lib/jobExtractor";
 import { ensureSkillsWithEmbeddings } from "@/lib/skillStore";
+
+/* ---------- Types ---------- */
 
 type CreateJobBody = {
   title: string;
@@ -11,94 +13,122 @@ type CreateJobBody = {
   minExperience?: number;
 };
 
+type ExtractedSkills = {
+  required_skills?: unknown;
+  preferred_skills?: unknown;
+  minExperience?: number;
+};
 
+/* ---------- Helpers ---------- */
 
-function normalizedSkillKey(name: string) {
-  return name.trim().replace(/\s+/g, " ").toLowerCase();
+function normalizeSkill(name: string): string {
+  return name.trim().replace(/\s+/g, " ").toLowerCase(); // Normalize by trimming, collapsing spaces, and lowercasing
 }
 
+// This function ensures we only work with string arrays and filters out any invalid entries
+function safeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((v): v is string => typeof v === "string");
+}
+
+/* ---------- Route ---------- */
+
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
+  try {
+    /* 1️⃣ Auth */
+    const session = await getServerSession(authOptions);
 
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (session.user.role !== "HR") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  const body = (await request.json()) as CreateJobBody;
+    if (session.user.role !== "HR") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
-  const { title, description, minExperience } = body;
+    /* 2️⃣ Parse body */
+    const body: CreateJobBody = await request.json();
+    const { title, description, minExperience } = body;
 
-  if (!title || !description) {
-    return NextResponse.json(
-      {
-        error: "Missing required fields: title, description",
-      },
-      { status: 400 },
+    if (!title || !description) {
+      return NextResponse.json(
+        { error: "Title and description are required" },
+        { status: 400 },
+      );
+    }
+
+    /* 3️⃣ Get HR profile */
+    const hrProfile = await prisma.hRProfile.findUnique({
+      where: { userId: session.user.id },
+    });
+
+    if (!hrProfile) {
+      return NextResponse.json(
+        { error: "HR profile not found" },
+        { status: 404 },
+      );
+    }
+
+    /* 4️⃣ Extract skills using LLM */
+    const extracted: ExtractedSkills = await extractJobSkills(description);
+
+    const requiredSkillNames = [
+      ...new Set(safeStringArray(extracted.required_skills)),
+    ];
+
+    const preferredSkillNames = [
+      ...new Set(safeStringArray(extracted.preferred_skills)),
+    ];
+
+    /* 5️⃣ Ensure skills exist in DB */
+    const storedSkills = await ensureSkillsWithEmbeddings([
+      ...requiredSkillNames,
+      ...preferredSkillNames,
+    ]);
+
+    /* 6️⃣ Prepare required lookup set */
+    const requiredSet = new Set(
+      requiredSkillNames.map((name) => normalizeSkill(name)),
     );
-  }
 
-  // Get hr porfile
-  const hrProfile = await prisma.hRProfile.findUnique({
-    where: { userId: session.user.id },
-  });
-
-  if (!hrProfile) {
-    return NextResponse.json(
-      { error: "HR profile not found" },
-      { status: 404 },
+    /* 7️⃣ Remove duplicates safely */
+    const uniqueSkills = Array.from(
+      new Map(
+        storedSkills.map((skill) => [normalizeSkill(skill.name), skill]),
+      ).values(),
     );
-  }
 
-  const extracted = await extractJobSkills(description);
+    /* 8️⃣ Create Job */
+    const job = await prisma.job.create({
+      data: {
+        title,
+        description,
+        minExperience: minExperience ?? extracted.minExperience ?? 0,
+        hrId: hrProfile.id,
+        jobSkills: {
+          create: uniqueSkills.map((skill) => ({
+            skillId: skill.id,
 
-  const extractedRequired: string[] = Array.isArray(extracted?.required_skills)
-    ? extracted.required_skills.filter((name: unknown): name is string => typeof name === "string")
-    : [];
-
-  const extractedPreferred: string[] = Array.isArray(extracted?.preferred_skills)
-    ? extracted.preferred_skills.filter((name: unknown): name is string => typeof name === "string")
-    : [];
-
-  const requiredSkillNames = Array.from(new Set(extractedRequired));
-  const preferredSkillNames = Array.from(new Set(extractedPreferred));
-
-  const storedSkills = await ensureSkillsWithEmbeddings([
-    ...requiredSkillNames,
-    ...preferredSkillNames,
-  ]);
-
-  const requiredKeys = new Set(requiredSkillNames.map((name) => normalizedSkillKey(name)));
-  const resolvedByKey = new Map(
-    storedSkills.map((skill) => [normalizedSkillKey(skill.name), skill]),
-  );
-
-  const uniqueResolved = Array.from(resolvedByKey.values());
-
-  const job = await prisma.job.create({
-    data: {
-      title,
-      description,
-      minExperience: minExperience ?? extracted?.minExperience ?? 0,
-      hrId: hrProfile.id,
-      jobSkills: {
-        create: uniqueResolved.map((skill) => ({
-          skillId: skill.id,
-          weight: 1,
-          required: requiredKeys.has(normalizedSkillKey(skill.name)),
-        })),
-      },
-    },
-    include: {
-      jobSkills: {
-        include: {
-          skill: true,
+            required: requiredSet.has(normalizeSkill(skill.name)),
+            weight: requiredSet.has(normalizeSkill(skill.name)) ? 2 : 1,
+          })),
         },
       },
-    },
-  });
+      include: {
+        jobSkills: {
+          include: {
+            skill: true,
+          },
+        },
+      },
+    });
 
-  return NextResponse.json(job, { status: 201 });
+    return NextResponse.json(job, { status: 201 });
+  } catch (error) {
+    console.error("Create Job Error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
+  }
 }

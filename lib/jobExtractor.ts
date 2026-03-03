@@ -1,6 +1,5 @@
 import { callLLM } from "./llm";
 
-
 export async function extractJobSkills(description: string) {
   const prompt = `
 Extract only technical skills from this job description.
@@ -25,16 +24,16 @@ Job Description:
 ${description}
 `;
 
-  const raw = await callLLM(prompt);
+  const response = await callLLM(prompt);
 
-  if (!raw) {
+  if (!response) {
     throw new Error("Empty response from LLM");
   }
 
   try {
-    return JSON.parse(raw);
-  } catch {
-    console.log("LLM RAW OUTPUT:", raw);
+    return JSON.parse(response);
+  } catch (error) {
+    console.error("Invalid JSON from LLM:", response);
     throw new Error("Invalid JSON from LLM");
   }
 }
