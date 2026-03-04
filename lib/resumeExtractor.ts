@@ -8,12 +8,13 @@ Rules:
 Ignore soft skills.
 Ignore personality traits.
 Ignore generic words.
+If not mentioned return 0 for experience years.
 
 Return strictly valid JSON:
 
 {
   "skills": string[],
-  "experienceYears": number | null
+  "experienceYears": number 
 }
 
 Resume text:

@@ -77,7 +77,7 @@ async function findNearestSkill(
   };
 }
 
-export async function ensureSkillsWithEmbeddings(skillNames: string[]) {
+export async function ensureSkillsWithEmbeddings(skillNames: string[],allowCreate = true) {
   const minSimilarity = 0.78;
 
   const uniqueNames = Array.from(
@@ -120,6 +120,9 @@ export async function ensureSkillsWithEmbeddings(skillNames: string[]) {
 
     if (nearest) {
       ensured.push(nearest);
+      continue;
+    }
+    if (!allowCreate) {
       continue;
     }
 

@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { PDFParse } from "pdf-parse";
+import { writeFile, unlink } from "fs/promises";
+import { join } from "path";
+import { tmpdir } from "os";
 
 export const runtime = "nodejs";
 
@@ -16,6 +18,10 @@ export async function POST(request: NextRequest) {
   const formData = await request.formData(); // Parse the multipart form data
   const file = formData.get("file") as File; // Get the file from the form data
 
+  if (!file) {
+    return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+  }
+
   if (file.size > 5 * 1024 * 1024) {
     return NextResponse.json(
       { error: "File too large (max 5MB)" },
@@ -23,9 +29,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!file) {
-    return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
-  }
   if (file.type !== "application/pdf") {
     return NextResponse.json(
       { error: "Invalid file type. Only PDF files are allowed." },
@@ -33,23 +36,43 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer()); // Convert the file to a buffer(binary data) to be used by pdf-parse and Buffer.from is used to create a new buffer from the array buffer of the file. This is necessary because pdf-parse expects a buffer as input. The array buffer is a low-level representation of the file's data, and Buffer.from allows us to convert it into a format that pdf-parse can work with.
+  const buffer = Buffer.from(await file.arrayBuffer());
 
-  const parser = new PDFParse({ data: buffer }); // Parse the PDF to extract text and metadata. A new instance of PDFParse is created, and the buffer containing the PDF data is passed to it. This initializes the parser with the PDF file, allowing us to extract the text content and any relevant metadata from the PDF document.
-
-  const parsed = await parser.getText(); // Get the text content from the parsed PDF. The getText() method is called on the parser instance to extract the text content from the PDF file.
-
-  await parser.destroy(); // Clean up resources used by the parser.
-
-  const text = parsed.text;
+  // Create temporary file for pdf-text-extract
+  const tempFilePath = join(tmpdir(), `resume-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.pdf`);
+  
+  let text: string = '';
+  
+  try {
+    // Write buffer to temporary file
+    await writeFile(tempFilePath, buffer);
+    
+    // Extract text using pdf-text-extract with file path
+    // @ts-expect-error - No types available for pdf-text-extract
+    const pdfExtract = await import("pdf-text-extract");
+    const textPages: string[] = await new Promise((resolve, reject) => {
+      pdfExtract.default(tempFilePath, (err: Error | null, pages: string[]) => {
+        if (err) reject(err);
+        else resolve(pages);
+      });
+    });
+    text = textPages.join('\n\n');
+  } finally {
+    // Clean up temporary file
+    try {
+      await unlink(tempFilePath);
+    } catch (cleanupError) {
+      console.warn('Failed to clean up temporary file:', cleanupError);
+    }
+  }
 
   // validation to check reasonable length text
   if (!text || text.trim().length < 50) {
-  return NextResponse.json(
-    { error: "Could not extract valid resume text" },
-    { status: 400 }
-  );
-}
+    return NextResponse.json(
+      { error: "Could not extract valid resume text" },
+      { status: 400 },
+    );
+  }
 
   //get candidate profile
   const candidateProfile = await prisma.candidateProfile.findUnique({
