@@ -19,6 +19,12 @@ enum Role {
   ADMIN
 }
 
+enum ApplicationStatus {
+  PENDING
+  SHORTLISTED
+  REJECTED
+}
+
 model User {
   id        String   @id @default(nanoid())
   fullname  String
@@ -41,12 +47,13 @@ model HRProfile {
 }
 
 model CandidateProfile {
-  id              String        @id @default(nanoid())
-  userId          String        @unique
-  user            User          @relation(fields: [userId], references: [id])
+  id              String           @id @default(nanoid())
+  userId          String           @unique
+  user            User             @relation(fields: [userId], references: [id])
   experienceYears Float?
   resumes         Resume[]
   matches         MatchResult[]
+  applications    JobApplication[]
 }
 
 model Resume {
@@ -59,15 +66,16 @@ model Resume {
 }
 
 model Job {
-  id            String        @id @default(nanoid())
+  id            String           @id @default(nanoid())
   hrId          String
-  hr            HRProfile     @relation(fields: [hrId], references: [id])
+  hr            HRProfile        @relation(fields: [hrId], references: [id])
   title         String
   description   String
   minExperience Float?
-  createdAt     DateTime      @default(now())
+  createdAt     DateTime         @default(now())
   jobSkills     JobSkill[]
   matches       MatchResult[]
+  applications  JobApplication[]
 }
 
 model Skill {
@@ -112,6 +120,21 @@ model MatchResult {
   candidate     CandidateProfile @relation(fields: [candidateId], references: [id])
   job           Job              @relation(fields: [jobId], references: [id])
   missingSkills MissingSkill[]
+}
+
+model JobApplication {
+  id          String            @id @default(nanoid())
+  jobId       String
+  candidateId String
+  status      ApplicationStatus @default(PENDING)
+  note        String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  job       Job              @relation(fields: [jobId], references: [id])
+  candidate CandidateProfile @relation(fields: [candidateId], references: [id])
+
+  @@unique([jobId, candidateId])
 }
 
 model MissingSkill {
