@@ -2,16 +2,14 @@ import { prisma } from "@/lib/prisma";
 
 export async function computeMatch(resumeId: string, jobId: string) {
   const jobSkills = await prisma.jobSkill.findMany({
-    where: { jobId },
+    where: { jobId }
   });
 
   const resumeSkills = await prisma.resumeSkill.findMany({
-    where: { resumeId },
+    where: { resumeId }
   });
 
-  const candidateSkillIds = new Set(
-    resumeSkills.map((s) => s.skillId)
-  );
+  const candidateSkillIds = new Set(resumeSkills.map(s => s.skillId));
 
   let totalWeight = 0;
   let matchedWeight = 0;
@@ -23,8 +21,11 @@ export async function computeMatch(resumeId: string, jobId: string) {
 
     if (candidateSkillIds.has(js.skillId)) {
       matchedWeight += js.weight;
-    } else if (js.required) {
-      missingSkills.push(js.skillId);
+    } else {
+      missingSkills.push({
+        skillId: js.skillId,
+        required: js.required
+      });
     }
   }
 
@@ -32,6 +33,6 @@ export async function computeMatch(resumeId: string, jobId: string) {
 
   return {
     score,
-    missingSkills,
+    missingSkills
   };
 }

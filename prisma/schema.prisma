@@ -20,8 +20,9 @@ enum Role {
 }
 
 enum ApplicationStatus {
-  PENDING
+  APPLIED
   SHORTLISTED
+  INTERVIEW
   REJECTED
 }
 
@@ -126,7 +127,7 @@ model JobApplication {
   id          String            @id @default(nanoid())
   jobId       String
   candidateId String
-  status      ApplicationStatus @default(PENDING)
+  status      ApplicationStatus @default(APPLIED)
   note        String?
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
@@ -142,6 +143,6 @@ model MissingSkill {
   matchResultId String
   skillId       String
   priority      String? // High / Medium / Low
-  matchResult   MatchResult @relation(fields: [matchResultId], references: [id])
+  matchResult   MatchResult @relation(fields: [matchResultId], references: [id] ,onDelete: Cascade) // If a match result is deleted, its missing skills should also be deleted
   skill         Skill       @relation(fields: [skillId], references: [id])
 }

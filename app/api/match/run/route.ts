@@ -32,14 +32,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (existingMatches.length > 0) {
-    // Delete MissingSkill records first
-    await prisma.missingSkill.deleteMany({
-      where: {
-        matchResultId: { in: existingMatches.map(m => m.id) },
-      },
-    });
-
-    // Then delete MatchResult records
+    // Delete MatchResult records (MissingSkill records will be automatically deleted due to onDelete: Cascade)
     await prisma.matchResult.deleteMany({
       where: {
         candidateId: resume.candidateId,
@@ -54,8 +47,9 @@ export async function POST(req: NextRequest) {
       jobId,
       score: result.score,
       missingSkills: {
-        create: result.missingSkills.map((skillId: string) => ({
-          skillId,
+        create: result.missingSkills.map((skill) => ({
+          skillId: skill.skillId,
+          priority: skill.required ? "HIGH" : "MEDIUM",
         })),
       },
     },
