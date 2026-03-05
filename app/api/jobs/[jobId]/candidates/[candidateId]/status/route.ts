@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-type ApplicationStatusValue = "PENDING" | "SHORTLISTED" | "REJECTED";
+type ApplicationStatusValue = "APPLIED" | "SHORTLISTED" | "INTERVIEW" | "REJECTED";
 
 type UpdateStatusBody = {
   status?: string;
@@ -11,8 +11,9 @@ type UpdateStatusBody = {
 };
 
 const ALLOWED_STATUSES: ApplicationStatusValue[] = [
-  "PENDING",
+  "APPLIED",
   "SHORTLISTED",
+  "INTERVIEW",
   "REJECTED",
 ];
 
@@ -40,7 +41,7 @@ export async function PATCH(
 
   if (!status || !ALLOWED_STATUSES.includes(status as ApplicationStatusValue)) {
     return NextResponse.json(
-      { error: "Invalid status. Use PENDING, SHORTLISTED, or REJECTED" },
+      { error: "Invalid status. Use APPLIED, SHORTLISTED, INTERVIEW, or REJECTED" },
       { status: 400 },
     );
   }

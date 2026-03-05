@@ -103,7 +103,11 @@ JWT_SECRET="your_secret_key"
 
 ### 4. Setup Database
 
-npx prisma migrate dev
+```bash
+npx prisma migrate dev --name initial-setup
+npx prisma generate
+npm run seed
+```
 
 ---
 
@@ -115,13 +119,80 @@ npm run dev
 
 ## Project Structure
 
+```
 /app
-  /api
-  /dashboard
-/lib
-/services
-/prisma
-  schema.prisma
+  /api                      # API Routes
+    /auth                   # Authentication
+      /[...nextauth]        # NextAuth.js handlers
+      /register             # User registration
+    /jobs                   # Job management
+      /[jobId]
+        /candidates         # Get candidates for job
+          /[candidateId]
+            /status         # Update application status
+    /candidate              # Candidate features
+      /applications         # View/Create applications
+    /match                  # Matching engine
+      /run                  # Run match calculation
+      /[jobId]/[candidateId]
+        /skill-gap          # Get skill gap analysis
+    /resume                 # Resume processing
+      /upload               # Upload resume
+      /process             # Process resume with AI
+      /[resumeId]/matches   # Get matches for resume
+    /test-*                 # Development/testing routes
+  /dashboard                # Frontend pages
+/lib                        # Shared utilities
+  auth.ts                  # Authentication config
+  prisma.ts               # Database client
+  llm.ts                  # LLM integration
+  matchingEngine.ts       # Core matching logic
+  resumeExtractor.ts      # Resume parsing
+  jobExtractor.ts         # Job parsing
+  skillStore.ts           # Skill management
+/prisma                     # Database
+  schema.prisma           # Database schema
+  /migrations             # Database migrations
+/types                      # TypeScript definitions
+```
+
+---
+
+## API Documentation
+
+### Authentication Routes
+- **POST** `/api/auth/register` - Register new user
+- **All** `/api/auth/[...nextauth]` - NextAuth.js authentication handlers
+
+### Job Management (HR Only)
+- **POST** `/api/jobs` - Create new job posting with AI skill extraction
+- **GET** `/api/jobs/[jobId]/candidates` - Get ranked candidates for a job
+- **PATCH** `/api/jobs/[jobId]/candidates/[candidateId]/status` - Update application status
+
+### Candidate Features
+- **GET** `/api/candidate/applications` - Get candidate's applications
+- **POST** `/api/candidate/applications` - Apply to a job (with duplicate prevention)
+
+### Resume Processing (Candidate Only)
+- **POST** `/api/resume/upload` - Upload PDF resume (max 5MB)
+- **POST** `/api/resume/process` - Process resume with AI skill extraction
+- **GET** `/api/resume/[resumeId]/matches` - Get job matches for resume
+
+### Matching Engine
+- **POST** `/api/match/run` - Calculate match score between resume and job
+- **GET** `/api/match/[jobId]/[candidateId]/skill-gap` - Get skill gap analysis
+
+### Application Status Flow
+```
+APPLIED → SHORTLISTED → INTERVIEW → REJECTED
+```
+
+### Development/Testing Routes
+- **POST** `/api/test` - Test API connectivity
+- **POST** `/api/test-llm` - Test LLM integration
+- **POST** `/api/test-embedding` - Test embedding generation
+- **POST** `/api/test-models` - Test AI models
+- **POST** `/api/test-resume-process` - Test resume processing
 
 ---
 

@@ -105,7 +105,7 @@ export async function GET(
     name: r.candidate.user.fullname,
     matchPercentage: r.score * 100, // Convert to percentage
     missingSkills: r.missingSkills.map((ms) => ms.skill.name),
-    status: decisionByCandidateId.get(r.candidate.id)?.status ?? "PENDING",
+    status: decisionByCandidateId.get(r.candidate.id)?.status ?? "APPLIED",
     note: decisionByCandidateId.get(r.candidate.id)?.note ?? null,
     statusUpdatedAt:
       decisionByCandidateId.get(r.candidate.id)?.updatedAt ?? null,
