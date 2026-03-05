@@ -46,7 +46,7 @@ export async function GET(
   const formatted = results.map((r) => ({
     candidateId: r.candidate.id,
     name: r.candidate.user.fullname,
-    score: r.score,
+    match: r.score * 100, // Convert to percentage
     missingSkills: r.missingSkills.map((ms) => ms.skill.name),
   }));
 
