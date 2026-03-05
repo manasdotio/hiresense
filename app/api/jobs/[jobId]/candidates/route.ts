@@ -11,13 +11,13 @@ output: list of candidates with their score and missing skills, sorted by score 
   {
     "candidateId": "c1",
     "name": "Manas",
-    "score": 0.82,
+    "matchPercentage": 0.82,
     "missingSkills": ["Docker"]
   },
   {
     "candidateId": "c2",
     "name": "Rahul",
-    "score": 0.65,
+    "matchPercentage": 0.65,
     "missingSkills": ["Docker", "PostgreSQL"]
   }
 ] */
@@ -103,7 +103,7 @@ export async function GET(
   const formatted = results.map((r) => ({
     candidateId: r.candidate.id,
     name: r.candidate.user.fullname,
-    match: r.score * 100, // Convert to percentage
+    matchPercentage: r.score * 100, // Convert to percentage
     missingSkills: r.missingSkills.map((ms) => ms.skill.name),
     status: decisionByCandidateId.get(r.candidate.id)?.status ?? "PENDING",
     note: decisionByCandidateId.get(r.candidate.id)?.note ?? null,
