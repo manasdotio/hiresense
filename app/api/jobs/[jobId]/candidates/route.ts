@@ -22,9 +22,9 @@ output: list of candidates with their score and missing skills, sorted by score 
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { jobId: string } },
+  { params }: { params: Promise<{ jobId: string }> },
 ) {
-  const { jobId } = params;
+  const { jobId } = await params;
 
   const results = await prisma.matchResult.findMany({
     where: { jobId },
