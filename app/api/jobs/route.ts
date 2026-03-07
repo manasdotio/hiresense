@@ -33,6 +33,122 @@ function safeStringArray(value: unknown): string[] {
 
 /* ---------- Route ---------- */
 
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const role = session.user.role;
+    const whereClause: { hrId?: string } = {};
+    let appliedJobIds = new Set<string>();
+
+    if (role === "HR") {
+      const hrProfile = await prisma.hRProfile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+
+      if (!hrProfile) {
+        return NextResponse.json(
+          { error: "HR profile not found" },
+          { status: 404 },
+        );
+      }
+
+      whereClause.hrId = hrProfile.id;
+    } else if (role === "CANDIDATE") {
+      const candidateProfile = await prisma.candidateProfile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+
+      if (!candidateProfile) {
+        return NextResponse.json(
+          { error: "Candidate profile not found" },
+          { status: 404 },
+        );
+      }
+
+      const applications = await prisma.jobApplication.findMany({
+        where: { candidateId: candidateProfile.id },
+        select: { jobId: true },
+      });
+
+      appliedJobIds = new Set(applications.map((application) => application.jobId));
+    } else if (role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const jobs = await prisma.job.findMany({
+      where: whereClause,
+      orderBy: { createdAt: "desc" },
+      include: {
+        hr: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullname: true,
+              },
+            },
+          },
+        },
+        jobSkills: {
+          include: {
+            skill: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            applications: true,
+            matches: true,
+          },
+        },
+      },
+    });
+
+    const formattedJobs = jobs.map((job) => {
+      const requiredSkills = job.jobSkills
+        .filter((jobSkill) => jobSkill.required)
+        .map((jobSkill) => jobSkill.skill.name);
+
+      const preferredSkills = job.jobSkills
+        .filter((jobSkill) => !jobSkill.required)
+        .map((jobSkill) => jobSkill.skill.name);
+
+      return {
+        id: job.id,
+        title: job.title,
+        description: job.description,
+        minExperience: job.minExperience,
+        createdAt: job.createdAt,
+        postedBy: job.hr.user.fullname,
+        requiredSkills,
+        preferredSkills,
+        applicationsCount: job._count.applications,
+        matchesCount: job._count.matches,
+        hasApplied: appliedJobIds.has(job.id),
+      };
+    });
+
+    return NextResponse.json({ jobs: formattedJobs });
+  } catch (error) {
+    console.error("Get Jobs Error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     /* 1️⃣ Auth */

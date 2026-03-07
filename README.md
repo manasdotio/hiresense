@@ -126,19 +126,26 @@ npm run dev
       /[...nextauth]        # NextAuth.js handlers
       /register             # User registration
     /jobs                   # Job management
+      /route.ts             # List/Create jobs
       /[jobId]
+        /route.ts           # Get/Update/Delete a job
         /candidates         # Get candidates for job
           /[candidateId]
             /status         # Update application status
     /candidate              # Candidate features
       /applications         # View/Create applications
+      /profile              # Get/Update candidate profile
+      /resumes              # List candidate resume history
+    /hr
+      /dashboard            # HR dashboard summary metrics
     /match                  # Matching engine
       /run                  # Run match calculation
       /[jobId]/[candidateId]
         /skill-gap          # Get skill gap analysis
     /resume                 # Resume processing
       /upload               # Upload resume
-      /process             # Process resume with AI
+      /process              # Process resume with AI
+      /[resumeId]           # Delete a resume
       /[resumeId]/matches   # Get matches for resume
     /test-*                 # Development/testing routes
   /dashboard                # Frontend pages
@@ -164,19 +171,30 @@ npm run dev
 - **POST** `/api/auth/register` - Register new user
 - **All** `/api/auth/[...nextauth]` - NextAuth.js authentication handlers
 
-### Job Management (HR Only)
+### Job Management
+- **GET** `/api/jobs` - List jobs (role-aware list by logged-in user)
 - **POST** `/api/jobs` - Create new job posting with AI skill extraction
+- **GET** `/api/jobs/[jobId]` - Get job details (role-aware)
+- **PATCH** `/api/jobs/[jobId]` - Update job title/description (re-extract skills and min experience if description changes)
+- **DELETE** `/api/jobs/[jobId]` - Delete a job and related records
 - **GET** `/api/jobs/[jobId]/candidates` - Get ranked candidates for a job
 - **PATCH** `/api/jobs/[jobId]/candidates/[candidateId]/status` - Update application status
 
 ### Candidate Features
 - **GET** `/api/candidate/applications` - Get candidate's applications
 - **POST** `/api/candidate/applications` - Apply to a job (with duplicate prevention)
+- **GET** `/api/candidate/profile` - Get candidate profile
+- **PATCH** `/api/candidate/profile` - Update candidate profile
+- **GET** `/api/candidate/resumes` - Get candidate resume history
+
+### HR Dashboard
+- **GET** `/api/hr/dashboard` - Get HR dashboard KPIs, funnel, and job-level summaries
 
 ### Resume Processing (Candidate Only)
 - **POST** `/api/resume/upload` - Upload PDF resume (max 5MB)
 - **POST** `/api/resume/process` - Process resume with AI skill extraction
 - **GET** `/api/resume/[resumeId]/matches` - Get job matches for resume
+- **DELETE** `/api/resume/[resumeId]` - Delete a resume (if no resumes remain, candidate match results are cleared)
 
 ### Matching Engine
 - **POST** `/api/match/run` - Calculate match score between resume and job
@@ -188,11 +206,11 @@ APPLIED → SHORTLISTED → INTERVIEW → REJECTED
 ```
 
 ### Development/Testing Routes
-- **POST** `/api/test` - Test API connectivity
-- **POST** `/api/test-llm` - Test LLM integration
-- **POST** `/api/test-embedding` - Test embedding generation
-- **POST** `/api/test-models` - Test AI models
-- **POST** `/api/test-resume-process` - Test resume processing
+- **GET** `/api/test` - Test API connectivity
+- **GET** `/api/test-llm` - Test LLM integration
+- **GET** `/api/test-embedding` - Test embedding generation
+- **GET** `/api/test-models` - Test AI models
+- **GET** `/api/test-resume-process` - Test resume processing
 
 ---
 
