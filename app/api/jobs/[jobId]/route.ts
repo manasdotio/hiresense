@@ -5,7 +5,14 @@ import { prisma } from "@/lib/prisma";
 import { extractJobSkills } from "@/lib/jobExtractor";
 import { ensureSkillsWithEmbeddings } from "@/lib/skillStore";
 
-type ApplicationStatusKey = "APPLIED" | "SHORTLISTED" | "INTERVIEW" | "REJECTED";
+/* ---------------- TYPES ---------------- */
+
+type ApplicationStatusKey =
+  | "APPLIED"
+  | "SHORTLISTED"
+  | "INTERVIEW"
+  | "REJECTED";
+
 type StatusCounts = Record<ApplicationStatusKey, number>;
 
 type UpdateJobBody = {
@@ -19,6 +26,8 @@ type ExtractedSkills = {
   minExperience?: number;
 };
 
+/* ---------------- HELPERS ---------------- */
+
 function emptyStatusCounts(): StatusCounts {
   return {
     APPLIED: 0,
@@ -29,15 +38,10 @@ function emptyStatusCounts(): StatusCounts {
 }
 
 function isApplicationStatus(value: string): value is ApplicationStatusKey {
-  return (
-    value === "APPLIED" ||
-    value === "SHORTLISTED" ||
-    value === "INTERVIEW" ||
-    value === "REJECTED"
-  );
+  return ["APPLIED", "SHORTLISTED", "INTERVIEW", "REJECTED"].includes(value);
 }
 
-function normalizeSkill(name: string): string {
+function normalizeSkill(name: string) {
   return name.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
@@ -45,6 +49,10 @@ function safeStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((v): v is string => typeof v === "string");
 }
+
+/* ======================================================
+   GET JOB DETAIL
+====================================================== */
 
 export async function GET(
   req: NextRequest,
@@ -54,43 +62,21 @@ export async function GET(
   const { jobId } = await params;
 
   try {
-    // 1) Auth check
+    /* Auth */
     const session = await getServerSession(authOptions);
-
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 2) Load job with relations needed for Job Detail page
+    /* Load job */
     const job = await prisma.job.findUnique({
       where: { id: jobId },
       include: {
-        hr: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                fullname: true,
-              },
-            },
-          },
-        },
+        hr: { include: { user: { select: { id: true, fullname: true } } } },
         jobSkills: {
-          include: {
-            skill: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
+          include: { skill: { select: { id: true, name: true } } },
         },
-        _count: {
-          select: {
-            applications: true,
-            matches: true,
-          },
-        },
+        _count: { select: { applications: true, matches: true } },
       },
     });
 
@@ -101,98 +87,99 @@ export async function GET(
     const role = session.user.role;
     let candidateId: string | null = null;
 
-    // 3) Role checks
+    /* Role access checks */
+
     if (role === "HR") {
       const hrProfile = await prisma.hRProfile.findUnique({
         where: { userId: session.user.id },
         select: { id: true },
       });
 
-      if (!hrProfile) {
+      if (!hrProfile)
         return NextResponse.json(
           { error: "HR profile not found" },
           { status: 404 },
         );
-      }
 
-      if (job.hrId !== hrProfile.id) {
+      if (job.hrId !== hrProfile.id)
         return NextResponse.json(
-          { error: "You are not allowed to view this job" },
+          { error: "Not allowed to view this job" },
           { status: 403 },
         );
-      }
-    } else if (role === "CANDIDATE") {
-      const candidateProfile = await prisma.candidateProfile.findUnique({
+    }
+
+    if (role === "CANDIDATE") {
+      const profile = await prisma.candidateProfile.findUnique({
         where: { userId: session.user.id },
         select: { id: true },
       });
 
-      if (!candidateProfile) {
+      if (!profile)
         return NextResponse.json(
           { error: "Candidate profile not found" },
           { status: 404 },
         );
-      }
 
-      candidateId = candidateProfile.id;
-    } else if (role !== "ADMIN") {
+      candidateId = profile.id;
+    }
+
+    if (role !== "HR" && role !== "CANDIDATE" && role !== "ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // 4) Candidate-specific status (for Apply button state)
+    /* Candidate application state */
+
     let hasApplied = false;
     let myApplicationStatus: string | null = null;
 
     if (candidateId) {
-      const myApplication = await prisma.jobApplication.findUnique({
+      const app = await prisma.jobApplication.findUnique({
         where: {
-          jobId_candidateId: {
-            jobId,
-            candidateId,
-          },
+          jobId_candidateId: { jobId, candidateId },
         },
-        select: {
-          status: true,
-        },
+        select: { status: true },
       });
 
-      hasApplied = Boolean(myApplication);
-      myApplicationStatus = myApplication?.status ?? null;
+      hasApplied = Boolean(app);
+      myApplicationStatus = app?.status ?? null;
     }
 
-    // 5) HR/Admin pipeline summary
+    /* HR pipeline summary */
+
     let pipeline: StatusCounts | null = null;
 
     if (role === "HR" || role === "ADMIN") {
       pipeline = emptyStatusCounts();
 
-      const pipelineRows = await prisma.jobApplication.groupBy({
+      const rows = await prisma.jobApplication.groupBy({
         by: ["status"],
         where: { jobId },
         _count: { _all: true },
       });
 
-      for (const row of pipelineRows) {
-        if (isApplicationStatus(row.status)) {
-          pipeline[row.status] = row._count._all;
+      for (const r of rows) {
+        if (isApplicationStatus(r.status)) {
+          pipeline[r.status] = r._count._all;
         }
       }
     }
 
+    /* Skill separation */
+
     const requiredSkills = job.jobSkills
-      .filter((jobSkill) => jobSkill.required)
-      .map((jobSkill) => ({
-        id: jobSkill.skill.id,
-        name: jobSkill.skill.name,
-        weight: jobSkill.weight,
+      .filter((s) => s.required)
+      .map((s) => ({
+        id: s.skill.id,
+        name: s.skill.name,
+        weight: s.weight,
       }));
 
     const preferredSkills = job.jobSkills
-      .filter((jobSkill) => !jobSkill.required)
-      .map((jobSkill) => ({
-        id: jobSkill.skill.id,
-        name: jobSkill.skill.name,
-        weight: jobSkill.weight,
+      .filter((s) => !s.required)
+      .map((s) => ({
+        id: s.skill.id,
+        name: s.skill.name,
+        weight: s.weight,
       }));
 
     return NextResponse.json({
@@ -215,14 +202,18 @@ export async function GET(
       },
       pipeline,
     });
-  } catch (error) {
-    console.error("Get Job Detail Error:", error);
+  } catch (err) {
+    console.error("Get Job Detail Error:", err);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
     );
   }
 }
+
+/* ======================================================
+   UPDATE JOB
+====================================================== */
 
 export async function PATCH(
   request: NextRequest,
@@ -231,159 +222,104 @@ export async function PATCH(
   const { jobId } = await params;
 
   try {
-    // 1) Auth check
     const session = await getServerSession(authOptions);
-
-    if (!session) {
+    if (!session)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const role = session.user.role;
-
-    if (role !== "HR" && role !== "ADMIN") {
+    if (role !== "HR" && role !== "ADMIN")
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
-    // 2) Parse and validate body
     const body = (await request.json()) as UpdateJobBody;
 
-    let trimmedTitle: string | undefined;
-    let trimmedDescription: string | undefined;
+    const title = body.title?.trim();
+    const description = body.description?.trim();
 
-    if (typeof body.title === "string") {
-      trimmedTitle = body.title.trim();
-
-      if (!trimmedTitle) {
-        return NextResponse.json(
-          { error: "Title cannot be empty" },
-          { status: 400 },
-        );
-      }
-    }
-
-    if (typeof body.description === "string") {
-      trimmedDescription = body.description.trim();
-
-      if (!trimmedDescription) {
-        return NextResponse.json(
-          { error: "Description cannot be empty" },
-          { status: 400 },
-        );
-      }
-    }
-
-    if (trimmedTitle === undefined && trimmedDescription === undefined) {
+    if (title === "" || description === "") {
       return NextResponse.json(
-        {
-          error:
-            "Nothing to update. Provide at least one of: title, description",
-        },
+        { error: "Fields cannot be empty" },
         { status: 400 },
       );
     }
 
-    // 3) Ensure job exists
-    const existingJob = await prisma.job.findUnique({
-      where: { id: jobId },
-      select: {
-        id: true,
-        hrId: true,
-        description: true,
-      },
-    });
-
-    if (!existingJob) {
-      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    if (!title && !description) {
+      return NextResponse.json(
+        { error: "Provide title or description to update" },
+        { status: 400 },
+      );
     }
 
-    // 4) HR can only edit own jobs
+    const existingJob = await prisma.job.findUnique({
+      where: { id: jobId },
+      select: { id: true, hrId: true, description: true },
+    });
+
+    if (!existingJob)
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+
     if (role === "HR") {
-      const hrProfile = await prisma.hRProfile.findUnique({
+      const hr = await prisma.hRProfile.findUnique({
         where: { userId: session.user.id },
         select: { id: true },
       });
 
-      if (!hrProfile) {
+      if (!hr || hr.id !== existingJob.hrId)
         return NextResponse.json(
-          { error: "HR profile not found" },
-          { status: 404 },
-        );
-      }
-
-      if (existingJob.hrId !== hrProfile.id) {
-        return NextResponse.json(
-          { error: "You are not allowed to update this job" },
+          { error: "Not allowed to update this job" },
           { status: 403 },
         );
-      }
     }
 
-    // 5) Build update payload
-    const dataToUpdate: {
+    const updateData: {
       title?: string;
       description?: string;
       minExperience?: number;
     } = {};
 
-    if (trimmedTitle !== undefined) {
-      dataToUpdate.title = trimmedTitle;
-    }
-
-    if (trimmedDescription !== undefined) {
-      dataToUpdate.description = trimmedDescription;
-    }
+    if (title) updateData.title = title;
+    if (description) updateData.description = description;
 
     const descriptionChanged =
-      trimmedDescription !== undefined && trimmedDescription !== existingJob.description;
+      description && description !== existingJob.description;
 
-    let uniqueSkills: { id: string; name: string }[] = [];
+    let skills: { id: string; name: string }[] = [];
     let requiredSet = new Set<string>();
 
-    // If description changed, re-run extraction and replace old skills.
-    if (descriptionChanged && trimmedDescription) {
-      const extracted: ExtractedSkills = await extractJobSkills(trimmedDescription);
+    if (descriptionChanged && description) {
+      const extracted: ExtractedSkills = await extractJobSkills(description);
 
-      const requiredSkillNames = [
-        ...new Set(safeStringArray(extracted.required_skills)),
-      ];
-
-      const preferredSkillNames = [
+      const required = [...new Set(safeStringArray(extracted.required_skills))];
+      const preferred = [
         ...new Set(safeStringArray(extracted.preferred_skills)),
       ];
 
-      const storedSkills = await ensureSkillsWithEmbeddings([
-        ...requiredSkillNames,
-        ...preferredSkillNames,
+      const stored = await ensureSkillsWithEmbeddings([
+        ...required,
+        ...preferred,
       ]);
 
-      requiredSet = new Set(requiredSkillNames.map((name) => normalizeSkill(name)));
+      requiredSet = new Set(required.map(normalizeSkill));
 
-      uniqueSkills = Array.from(
-        new Map(
-          storedSkills.map((skill) => [normalizeSkill(skill.name), skill]),
-        ).values(),
+      skills = Array.from(
+        new Map(stored.map((s) => [normalizeSkill(s.name), s])).values(),
       );
 
-      dataToUpdate.minExperience = extracted.minExperience ?? 0;
+      updateData.minExperience = extracted.minExperience ?? 0;
     }
 
-    // 6) Update job (and replace skills when description changed)
     const updatedJob = await prisma.$transaction(async (tx) => {
-      await tx.job.update({
-        where: { id: jobId },
-        data: dataToUpdate,
-      });
+      await tx.job.update({ where: { id: jobId }, data: updateData });
 
       if (descriptionChanged) {
         await tx.jobSkill.deleteMany({ where: { jobId } });
 
-        if (uniqueSkills.length > 0) {
+        if (skills.length) {
           await tx.jobSkill.createMany({
-            data: uniqueSkills.map((skill) => ({
+            data: skills.map((s) => ({
               jobId,
-              skillId: skill.id,
-              required: requiredSet.has(normalizeSkill(skill.name)),
-              weight: requiredSet.has(normalizeSkill(skill.name)) ? 2 : 1,
+              skillId: s.id,
+              required: requiredSet.has(normalizeSkill(s.name)),
+              weight: requiredSet.has(normalizeSkill(s.name)) ? 2 : 1,
             })),
           });
         }
@@ -392,54 +328,32 @@ export async function PATCH(
       return tx.job.findUnique({
         where: { id: jobId },
         include: {
-          hr: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  fullname: true,
-                },
-              },
-            },
-          },
+          hr: { include: { user: { select: { id: true, fullname: true } } } },
           jobSkills: {
-            include: {
-              skill: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-            },
+            include: { skill: { select: { id: true, name: true } } },
           },
-          _count: {
-            select: {
-              applications: true,
-              matches: true,
-            },
-          },
+          _count: { select: { applications: true, matches: true } },
         },
       });
     });
 
-    if (!updatedJob) {
+    if (!updatedJob)
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
-    }
 
     const requiredSkills = updatedJob.jobSkills
-      .filter((jobSkill) => jobSkill.required)
-      .map((jobSkill) => ({
-        id: jobSkill.skill.id,
-        name: jobSkill.skill.name,
-        weight: jobSkill.weight,
+      .filter((s) => s.required)
+      .map((s) => ({
+        id: s.skill.id,
+        name: s.skill.name,
+        weight: s.weight,
       }));
 
     const preferredSkills = updatedJob.jobSkills
-      .filter((jobSkill) => !jobSkill.required)
-      .map((jobSkill) => ({
-        id: jobSkill.skill.id,
-        name: jobSkill.skill.name,
-        weight: jobSkill.weight,
+      .filter((s) => !s.required)
+      .map((s) => ({
+        id: s.skill.id,
+        name: s.skill.name,
+        weight: s.weight,
       }));
 
     return NextResponse.json({
@@ -461,14 +375,18 @@ export async function PATCH(
         matchesCount: updatedJob._count.matches,
       },
     });
-  } catch (error) {
-    console.error("Update Job Error:", error);
+  } catch (err) {
+    console.error("Update Job Error:", err);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
     );
   }
 }
+
+/* ======================================================
+   DELETE JOB
+====================================================== */
 
 export async function DELETE(
   req: NextRequest,
@@ -478,93 +396,64 @@ export async function DELETE(
   const { jobId } = await params;
 
   try {
-    // 1) Auth check
     const session = await getServerSession(authOptions);
-
-    if (!session) {
+    if (!session)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const role = session.user.role;
-
-    if (role !== "HR" && role !== "ADMIN") {
+    if (role !== "HR" && role !== "ADMIN")
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
-    // 2) Ensure job exists
-    const existingJob = await prisma.job.findUnique({
+    const job = await prisma.job.findUnique({
       where: { id: jobId },
-      select: {
-        id: true,
-        hrId: true,
-        title: true,
-      },
+      select: { id: true, hrId: true, title: true },
     });
 
-    if (!existingJob) {
+    if (!job)
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
-    }
 
-    // 3) HR can only delete own jobs
     if (role === "HR") {
-      const hrProfile = await prisma.hRProfile.findUnique({
+      const hr = await prisma.hRProfile.findUnique({
         where: { userId: session.user.id },
         select: { id: true },
       });
 
-      if (!hrProfile) {
+      if (!hr || hr.id !== job.hrId)
         return NextResponse.json(
-          { error: "HR profile not found" },
-          { status: 404 },
-        );
-      }
-
-      if (existingJob.hrId !== hrProfile.id) {
-        return NextResponse.json(
-          { error: "You are not allowed to delete this job" },
+          { error: "Not allowed to delete this job" },
           { status: 403 },
         );
-      }
     }
 
-    // 4) Delete dependent records first, then delete the job
     const deleted = await prisma.$transaction(async (tx) => {
-      const deletedApplications = await tx.jobApplication.deleteMany({
-        where: { jobId },
-      });
+      const apps = await tx.jobApplication.deleteMany({ where: { jobId } });
+      const skills = await tx.jobSkill.deleteMany({ where: { jobId } });
+      const matches = await tx.matchResult.deleteMany({ where: { jobId } });
 
-      const deletedJobSkills = await tx.jobSkill.deleteMany({
-        where: { jobId },
-      });
-
-      const deletedMatches = await tx.matchResult.deleteMany({
-        where: { jobId },
-      });
-
-      const deletedJob = await tx.job.delete({
+      const jobDeleted = await tx.job.delete({
         where: { id: jobId },
         select: { id: true, title: true },
       });
 
       return {
-        deletedApplications: deletedApplications.count,
-        deletedJobSkills: deletedJobSkills.count,
-        deletedMatches: deletedMatches.count,
-        deletedJob,
+        apps: apps.count,
+        skills: skills.count,
+        matches: matches.count,
+        job: jobDeleted,
       };
     });
 
     return NextResponse.json({
       message: "Job deleted successfully",
-      job: deleted.deletedJob,
+      job: deleted.job,
       deletedCounts: {
-        applications: deleted.deletedApplications,
-        jobSkills: deleted.deletedJobSkills,
-        matches: deleted.deletedMatches,
+        applications: deleted.apps,
+        jobSkills: deleted.skills,
+        matches: deleted.matches,
       },
     });
-  } catch (error) {
-    console.error("Delete Job Error:", error);
+  } catch (err) {
+    console.error("Delete Job Error:", err);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

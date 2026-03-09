@@ -172,13 +172,13 @@ npm run dev
 - **All** `/api/auth/[...nextauth]` - NextAuth.js authentication handlers
 
 ### Job Management
-- **GET** `/api/jobs` - List jobs (role-aware list by logged-in user)
+- **GET** `/api/jobs` - List jobs (role-aware list by logged-in user) // checked
 - **POST** `/api/jobs` - Create new job posting with AI skill extraction
-- **GET** `/api/jobs/[jobId]` - Get job details (role-aware)
-- **PATCH** `/api/jobs/[jobId]` - Update job title/description (re-extract skills and min experience if description changes)
-- **DELETE** `/api/jobs/[jobId]` - Delete a job and related records
-- **GET** `/api/jobs/[jobId]/candidates` - Get ranked candidates for a job
-- **PATCH** `/api/jobs/[jobId]/candidates/[candidateId]/status` - Update application status
+- **GET** `/api/jobs/[jobId]` - Get job details (role-aware)// checked
+- **PATCH** `/api/jobs/[jobId]` - Update job title/description (re-extract skills and min experience if description changes)// checked
+- **DELETE** `/api/jobs/[jobId]` - Delete a job and related records // checked
+- **GET** `/api/jobs/[jobId]/candidates` - Get ranked candidates for a job //checked
+- **PATCH** `/api/jobs/[jobId]/candidates/[candidateId]/status` - Update application status //checked
 
 ### Candidate Features
 - **GET** `/api/candidate/applications` - Get candidate's applications
