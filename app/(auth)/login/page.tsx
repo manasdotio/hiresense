@@ -1,5 +1,4 @@
 "use client";
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -7,12 +6,20 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
+import { Label } from "@/components/ui/label";
 
 const schema = z.object({
-  email: z.string(),
+  identifier: z.string(),
   password: z.string().min(6),
 });
 
@@ -31,7 +38,7 @@ export default function LoginPage() {
 
   async function onSubmit(data: FormData) {
     const result = await signIn("credentials", {
-      identifier: data.email,
+      identifier: data.identifier,
       password: data.password,
       redirect: false,
     });
@@ -45,22 +52,36 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-zinc-900">
-      <Card className="w-100 dark:bg-zinc-800 dark:border-zinc-700">
-        <CardHeader>
-          <CardTitle className="text-center">Login</CardTitle>
-        </CardHeader>
-
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <Input placeholder="Email" {...register("email")} />
-              {errors.email && (
-                <p className="text-sm text-red-500">{errors.email.message}</p>
+    <Card className="w-full max-w-sm">
+      <CardHeader>
+        <CardTitle>Login to your account</CardTitle>
+        <CardDescription>
+          Enter your email below to login to your account
+        </CardDescription>
+        <CardAction>
+          <Button variant="link">Sign Up</Button>
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="flex flex-col gap-6">
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input placeholder="Email" {...register("identifier")} />
+              {errors.identifier && (
+                <p className="text-sm text-red-500">{errors.identifier.message}</p>
               )}
             </div>
-
-            <div>
+            <div className="grid gap-2">
+              <div className="flex items-center">
+                <Label htmlFor="password">Password</Label>
+                <a
+                  href="#"
+                  className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                >
+                  Forgot your password?
+                </a>
+              </div>
               <Input
                 type="password"
                 placeholder="Password"
@@ -72,13 +93,17 @@ export default function LoginPage() {
                 </p>
               )}
             </div>
-
+          </div>
+          <div className="flex-col gap-2 mt-6 flex">
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               Login
             </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+            <Button variant="outline" className="w-full">
+              Login with Google
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
