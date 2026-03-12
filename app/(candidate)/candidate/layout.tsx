@@ -16,13 +16,13 @@ export default function CandidateLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
+  const pathname = usePathname(); // Get the current path to determine active nav item
 
   return (
     <div className="flex min-h-screen">
 
       {/* Sidebar */}
-      <aside className="w-64 border-r bg-white p-6">
+      <aside className="w-64 border-r border-zinc-700 bg-zinc-900 p-6 text-white">
 
         <h2 className="text-xl font-bold mb-8">
           AI Resume Analyzer
@@ -36,10 +36,10 @@ export default function CandidateLayout({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`block rounded px-3 py-2 text-sm font-medium ${
+                className={`block rounded px-3 py-2 text-sm font-medium transition-colors ${
                   active
-                    ? "bg-gray-100 text-black"
-                    : "text-gray-600 hover:bg-gray-50"
+                    ? "bg-zinc-700 text-white"
+                    : "text-white hover:bg-zinc-800"
                 }`}
               >
                 {item.name}
@@ -50,7 +50,7 @@ export default function CandidateLayout({
 
         <button
           onClick={() => signOut()}
-          className="mt-10 text-sm text-red-500"
+          className="mt-10 text-sm text-red-400"
         >
           Logout
         </button>
@@ -61,14 +61,14 @@ export default function CandidateLayout({
       <div className="flex-1 flex flex-col">
 
         {/* Header */}
-        <header className="border-b bg-white px-6 py-4">
-          <h1 className="text-lg font-semibold">
+        <header className="border-b border-zinc-700 bg-zinc-900 px-6 py-4 text-white">
+          <h1 className="text-lg font-semibold text-white">
             Candidate Dashboard
           </h1>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-6 bg-gray-50">
+        <main className="flex-1 p-6 bg-zinc-900 text-white ">
           {children}
         </main>
 
