@@ -143,6 +143,6 @@ model MissingSkill {
   matchResultId String
   skillId       String
   priority      String? // High / Medium / Low
-  matchResult   MatchResult @relation(fields: [matchResultId], references: [id] ,onDelete: Cascade) // If a match result is deleted, its missing skills should also be deleted
+  matchResult   MatchResult @relation(fields: [matchResultId], references: [id], onDelete: Cascade) // If a match result is deleted, its missing skills should also be deleted
   skill         Skill       @relation(fields: [skillId], references: [id])
 }

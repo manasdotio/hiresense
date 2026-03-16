@@ -77,6 +77,37 @@ export type CandidateResumesPayload = {
   };
 };
 
+export type ResumeUploadResponse = {
+  message: string;
+  resumeId: string;
+};
+
+export type ResumeProcessResponse = {
+  extractedSkills: string[];
+  experienceYears: number | null;
+};
+
+export type ResumeDeleteResponse = {
+  message: string;
+  deletedResume: {
+    resumeId: string;
+    uploadedAt: string;
+  };
+  deletedCounts: {
+    resumeSkills: number;
+    matchResults: number;
+  };
+  remainingResumes: number;
+  clearedMatches: boolean;
+};
+
+export type ResumeMatchItem = {
+  jobId: string;
+  jobTitle: string;
+  score: number;
+  matchPercentage: number;
+};
+
 export type CandidateDashboardData = {
   summary: {
     totalResumes: number;
@@ -98,8 +129,35 @@ export type CandidateDashboardData = {
   matchingMessage: string | null;
 };
 
+export type CandidateProfile = {
+  candidateId: string;
+  userId: string;
+  fullname: string;
+  username: string;
+  email: string;
+  role: "CANDIDATE";
+  experienceYears: number | null;
+  joinedAt: string;
+};
+
+export type UpdateCandidateProfileInput = {
+  fullname?: string;
+  username?: string;
+  email?: string;
+  experienceYears?: number | null;
+};
+
 type JobsResponse = {
   jobs: CandidateJobListItem[];
+};
+
+type CandidateProfileResponse = {
+  profile: CandidateProfile;
+};
+
+type CandidateProfileUpdateResponse = {
+  message: string;
+  profile: CandidateProfile;
 };
 
 function getErrorMessage(payload: unknown, fallback: string): string {
@@ -187,6 +245,86 @@ export async function getCandidateResumes(): Promise<CandidateResumesPayload> {
     { cache: "no-store" },
     "Failed to load resumes",
   );
+}
+
+export async function uploadResumeFile(file: File): Promise<ResumeUploadResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return requestJson<ResumeUploadResponse>(
+    "/api/resume/upload",
+    {
+      method: "POST",
+      body: formData,
+    },
+    "Failed to upload resume",
+  );
+}
+
+export async function processResumeById(
+  resumeId: string,
+): Promise<ResumeProcessResponse> {
+  return requestJson<ResumeProcessResponse>(
+    "/api/resume/process",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ resumeId }),
+    },
+    "Failed to process resume",
+  );
+}
+
+export async function deleteResumeById(
+  resumeId: string,
+): Promise<ResumeDeleteResponse> {
+  return requestJson<ResumeDeleteResponse>(
+    `/api/resume/${resumeId}`,
+    {
+      method: "DELETE",
+    },
+    "Failed to delete resume",
+  );
+}
+
+export async function getResumeMatches(
+  resumeId: string,
+): Promise<ResumeMatchItem[]> {
+  return requestJson<ResumeMatchItem[]>(
+    `/api/resume/${resumeId}/matches`,
+    { cache: "no-store" },
+    "Failed to load resume matches",
+  );
+}
+
+export async function getCandidateProfile(): Promise<CandidateProfile> {
+  const data = await requestJson<CandidateProfileResponse>(
+    "/api/candidate/profile",
+    { cache: "no-store" },
+    "Failed to load profile",
+  );
+
+  return data.profile;
+}
+
+export async function updateCandidateProfile(
+  input: UpdateCandidateProfileInput,
+): Promise<CandidateProfile> {
+  const data = await requestJson<CandidateProfileUpdateResponse>(
+    "/api/candidate/profile",
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    },
+    "Failed to update profile",
+  );
+
+  return data.profile;
 }
 
 export async function getCandidateDashboardData(): Promise<CandidateDashboardData> {

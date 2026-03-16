@@ -140,6 +140,9 @@ export default function CandidateDashboardPage() {
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
+                <Link href="/candidate/profile" className="block text-sky-300 hover:underline">
+                  Edit profile details
+                </Link>
                 <Link href="/candidate/resume" className="block text-sky-300 hover:underline">
                   Upload or process resume
                 </Link>

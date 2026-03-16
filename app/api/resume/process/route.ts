@@ -2,50 +2,97 @@ import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { extractResumeData } from "@/lib/resumeExtractor";
 import { ensureSkillsWithEmbeddings } from "@/lib/skillStore";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+
+type ProcessResumeBody = {
+  resumeId?: string;
+};
 
 export async function POST(request: NextRequest) {
-  const { resumeId } = await request.json();
+  try {
+    const session = await getServerSession(authOptions);
 
-  const resume = await prisma.resume.findUnique({
-    where: { id: resumeId },
-  });
+    if (!session || session.user.role !== "CANDIDATE") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  if (!resume) {
-    return NextResponse.json({ error: "Resume not found" }, { status: 404 });
-  }
+    const body = (await request.json()) as ProcessResumeBody;
+    const resumeId = typeof body.resumeId === "string" ? body.resumeId : "";
 
-  const extracted = await extractResumeData(resume.rawText);
+    if (!resumeId) {
+      return NextResponse.json({ error: "resumeId is required" }, { status: 400 });
+    }
 
-  // Update candidate profile with experience years if available
-  if (extracted.experienceYears !== null) {
-    await prisma.candidateProfile.update({
-      where: { id: resume.candidateId },
-      data: {
-        experienceYears: extracted.experienceYears,
+    const candidate = await prisma.candidateProfile.findUnique({
+      where: { userId: session.user.id },
+      select: { id: true },
+    });
+
+    if (!candidate) {
+      return NextResponse.json(
+        { error: "Candidate profile not found" },
+        { status: 404 },
+      );
+    }
+
+    const resume = await prisma.resume.findFirst({
+      where: {
+        id: resumeId,
+        candidateId: candidate.id,
+      },
+      select: {
+        id: true,
+        rawText: true,
       },
     });
+
+    if (!resume) {
+      return NextResponse.json(
+        { error: "Resume not found for this candidate" },
+        { status: 404 },
+      );
+    }
+
+    const extracted = await extractResumeData(resume.rawText);
+    const extractedSkills = Array.isArray(extracted.skills) ? extracted.skills : [];
+    const normalizedSkills = await ensureSkillsWithEmbeddings(extractedSkills, false);
+
+    await prisma.$transaction(async (tx) => {
+      // Update candidate profile with experience years if available.
+      if (extracted.experienceYears !== null) {
+        await tx.candidateProfile.update({
+          where: { id: candidate.id },
+          data: {
+            experienceYears: extracted.experienceYears,
+          },
+        });
+      }
+
+      // Clear old skills for this resume before inserting new ones.
+      await tx.resumeSkill.deleteMany({
+        where: { resumeId: resume.id },
+      });
+
+      // Insert normalized skills for this resume.
+      await tx.resumeSkill.createMany({
+        data: normalizedSkills.map((skill) => ({
+          resumeId: resume.id,
+          skillId: skill.id,
+        })),
+        skipDuplicates: true,
+      });
+    });
+
+    return NextResponse.json({
+      extractedSkills,
+      experienceYears: extracted.experienceYears,
+    });
+  } catch (error) {
+    console.error("Process Resume Error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
   }
-  // Clear old skills for this resume before inserting new ones
-  await prisma.resumeSkill.deleteMany({
-    where: { resumeId: resume.id },
-  });
-
-  // Normalize skills first
-  const normalizedSkills = await ensureSkillsWithEmbeddings(
-    extracted.skills,
-    false,
-  );
-  //Insert into ResumeSkill
-  await prisma.resumeSkill.createMany({
-    data: normalizedSkills.map((skill) => ({
-      resumeId: resume.id,
-      skillId: skill.id,
-    })),
-    skipDuplicates: true,
-  });
-
-  return NextResponse.json({
-    extractedSkills: extracted.skills,
-    experienceYears: extracted.experienceYears,
-  });
 }
