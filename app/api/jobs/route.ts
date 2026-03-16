@@ -44,6 +44,7 @@ export async function GET() {
     const role = session.user.role;
     const whereClause: { hrId?: string } = {};
     let appliedJobIds = new Set<string>();
+    let candidateResumeSkillIds = new Set<string>();
 
     if (role === "HR") {
       const hrProfile = await prisma.hRProfile.findUnique({
@@ -71,6 +72,35 @@ export async function GET() {
           { status: 404 },
         );
       }
+
+      const latestProcessedResume = await prisma.resume.findFirst({
+        where: {
+          candidateId: candidateProfile.id,
+          resumeSkills: {
+            some: {},
+          },
+        },
+        orderBy: { extractedAt: "desc" },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!latestProcessedResume) {
+        return NextResponse.json(
+          { error: "Upload and process at least one resume to see matched jobs." },
+          { status: 400 },
+        );
+      }
+
+      const resumeSkills = await prisma.resumeSkill.findMany({
+        where: { resumeId: latestProcessedResume.id },
+        select: { skillId: true },
+      });
+
+      candidateResumeSkillIds = new Set(
+        resumeSkills.map((resumeSkill) => resumeSkill.skillId),
+      );
 
       const applications = await prisma.jobApplication.findMany({
         where: { candidateId: candidateProfile.id },
@@ -124,6 +154,26 @@ export async function GET() {
         .filter((jobSkill) => !jobSkill.required)
         .map((jobSkill) => jobSkill.skill.name);
 
+      let matchPercentage: number | null = null;
+
+      if (role === "CANDIDATE") {
+        const totalWeight = job.jobSkills.reduce(
+          (sum, jobSkill) => sum + jobSkill.weight,
+          0,
+        );
+
+        const matchedWeight = job.jobSkills.reduce((sum, jobSkill) => {
+          if (candidateResumeSkillIds.has(jobSkill.skillId)) {
+            return sum + jobSkill.weight;
+          }
+
+          return sum;
+        }, 0);
+
+        const score = totalWeight === 0 ? 0 : matchedWeight / totalWeight;
+        matchPercentage = Number((score * 100).toFixed(2));
+      }
+
       return {
         id: job.id,
         title: job.title,
@@ -136,8 +186,20 @@ export async function GET() {
         applicationsCount: job._count.applications,
         matchesCount: job._count.matches,
         hasApplied: appliedJobIds.has(job.id),
+        matchPercentage,
       };
     });
+
+    if (role === "CANDIDATE") {
+      const matchedJobs = formattedJobs
+        .filter((job) => (job.matchPercentage ?? 0) > 0)
+        .sort(
+          (first, second) =>
+            (second.matchPercentage ?? 0) - (first.matchPercentage ?? 0),
+        );
+
+      return NextResponse.json({ jobs: matchedJobs });
+    }
 
     return NextResponse.json({ jobs: formattedJobs });
   } catch (error) {

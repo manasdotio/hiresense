@@ -86,6 +86,7 @@ export async function GET(
 
     const role = session.user.role;
     let candidateId: string | null = null;
+    let candidateResumeSkillIds = new Set<string>();
 
     /* Role access checks */
 
@@ -121,6 +122,35 @@ export async function GET(
         );
 
       candidateId = profile.id;
+
+      const latestProcessedResume = await prisma.resume.findFirst({
+        where: {
+          candidateId: profile.id,
+          resumeSkills: {
+            some: {},
+          },
+        },
+        orderBy: { extractedAt: "desc" },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!latestProcessedResume) {
+        return NextResponse.json(
+          { error: "Upload and process at least one resume to see matched jobs." },
+          { status: 400 },
+        );
+      }
+
+      const resumeSkills = await prisma.resumeSkill.findMany({
+        where: { resumeId: latestProcessedResume.id },
+        select: { skillId: true },
+      });
+
+      candidateResumeSkillIds = new Set(
+        resumeSkills.map((resumeSkill) => resumeSkill.skillId),
+      );
     }
 
     if (role !== "HR" && role !== "CANDIDATE" && role !== "ADMIN") {
@@ -182,6 +212,30 @@ export async function GET(
         weight: s.weight,
       }));
 
+    let matchPercentage: number | null = null;
+
+    if (role === "CANDIDATE") {
+      const totalWeight = job.jobSkills.reduce((sum, skill) => sum + skill.weight, 0);
+
+      const matchedWeight = job.jobSkills.reduce((sum, skill) => {
+        if (candidateResumeSkillIds.has(skill.skillId)) {
+          return sum + skill.weight;
+        }
+
+        return sum;
+      }, 0);
+
+      const score = totalWeight === 0 ? 0 : matchedWeight / totalWeight;
+      matchPercentage = Number((score * 100).toFixed(2));
+
+      if (matchPercentage <= 0 && !hasApplied) {
+        return NextResponse.json(
+          { error: "This job does not match your latest resume." },
+          { status: 404 },
+        );
+      }
+    }
+
     return NextResponse.json({
       job: {
         id: job.id,
@@ -199,6 +253,7 @@ export async function GET(
         matchesCount: job._count.matches,
         hasApplied,
         myApplicationStatus,
+        matchPercentage,
       },
       pipeline,
     });

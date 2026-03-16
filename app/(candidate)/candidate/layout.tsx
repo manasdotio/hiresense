@@ -7,7 +7,7 @@ import { signOut } from "next-auth/react";
 const navItems = [
   { name: "Dashboard", href: "/candidate/dashboard" },
   { name: "Resume", href: "/candidate/resume" },
-  { name: "Job Matches", href: "/candidate/jobs" },
+  { name: "Matched Jobs", href: "/candidate/jobs" },
   { name: "Applications", href: "/candidate/applications" },
 ];
 
