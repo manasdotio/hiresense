@@ -351,17 +351,17 @@ export default function ResumePage() {
                     View Matches
                   </Button>
 
-                  <Button
-                    size="sm"
-                    onClick={() => handleProcessResume(resume)}
-                    disabled={isWorking || deletingResumeId === resume.resumeId}
-                  >
-                    {processingResumeId === resume.resumeId
-                      ? "Processing..."
-                      : resume.isProcessed
-                        ? "Reprocess"
+                  {!resume.isProcessed && (
+                    <Button
+                      size="sm"
+                      onClick={() => handleProcessResume(resume)}
+                      disabled={isWorking || deletingResumeId === resume.resumeId}
+                    >
+                      {processingResumeId === resume.resumeId
+                        ? "Processing..."
                         : "Process"}
-                  </Button>
+                    </Button>
+                  )}
 
                   <Button
                     size="sm"
