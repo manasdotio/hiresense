@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 
+const MIN_MATCH_PERCENTAGE = 30;
+const MIN_MATCH_SCORE = MIN_MATCH_PERCENTAGE / 100;
+
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "CANDIDATE") {
@@ -106,6 +109,15 @@ export async function POST(req: NextRequest) {
 
   // Compute match from the latest processed resume before creating application.
   const computed = await computeMatch(latestProcessedResume.id, jobId);
+
+  if (computed.score <= MIN_MATCH_SCORE) {
+    return NextResponse.json(
+      {
+        error: `You can only apply to jobs with match score above ${MIN_MATCH_PERCENTAGE}%.`,
+      },
+      { status: 403 },
+    );
+  }
 
   const created = await prisma.$transaction(async (tx) => {
     await tx.matchResult.deleteMany({

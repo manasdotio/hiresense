@@ -26,6 +26,9 @@ type ExtractedSkills = {
   minExperience?: number;
 };
 
+const MIN_MATCH_PERCENTAGE = 30;
+const MIN_MATCH_SCORE = MIN_MATCH_PERCENTAGE / 100;
+
 /* ---------------- HELPERS ---------------- */
 
 function emptyStatusCounts(): StatusCounts {
@@ -228,9 +231,11 @@ export async function GET(
       const score = totalWeight === 0 ? 0 : matchedWeight / totalWeight;
       matchPercentage = Number((score * 100).toFixed(2));
 
-      if (matchPercentage <= 0 && !hasApplied) {
+      if (score <= MIN_MATCH_SCORE && !hasApplied) {
         return NextResponse.json(
-          { error: "This job does not match your latest resume." },
+          {
+            error: `This job requires a match score above ${MIN_MATCH_PERCENTAGE}%.`,
+          },
           { status: 404 },
         );
       }

@@ -19,6 +19,8 @@ type ExtractedSkills = {
   minExperience?: number;
 };
 
+const MIN_MATCH_PERCENTAGE = 30;
+
 /* ---------- Helpers ---------- */
 
 function normalizeSkill(name: string): string {
@@ -192,7 +194,7 @@ export async function GET() {
 
     if (role === "CANDIDATE") {
       const matchedJobs = formattedJobs
-        .filter((job) => (job.matchPercentage ?? 0) > 0)
+        .filter((job) => (job.matchPercentage ?? 0) > MIN_MATCH_PERCENTAGE)
         .sort(
           (first, second) =>
             (second.matchPercentage ?? 0) - (first.matchPercentage ?? 0),
