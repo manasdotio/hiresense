@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/card";
 import { getCandidateJobs } from "@/lib/candidateApi";
 
+const MIN_MATCH_PERCENTAGE = 30;
+
 function formatDate(value: string): string {
   return new Date(value).toLocaleDateString();
 }
@@ -29,7 +31,9 @@ export default function CandidateJobsPage() {
     queryFn: getCandidateJobs,
   });
 
-  const jobs = jobsQuery.data ?? [];
+  const jobs = (jobsQuery.data ?? []).filter(
+    (job) => (job.matchPercentage ?? 0) > MIN_MATCH_PERCENTAGE,
+  );
   const errorMessage =
     jobsQuery.error instanceof Error
       ? jobsQuery.error.message
@@ -40,7 +44,8 @@ export default function CandidateJobsPage() {
       <div>
         <h1 className="text-2xl font-bold">Matched Jobs</h1>
         <p className="text-sm text-zinc-300">
-          Jobs are shown based on your latest processed resume.
+          Jobs are shown based on your latest processed resume and must score above
+          {` ${MIN_MATCH_PERCENTAGE}%`}.
         </p>
       </div>
 
@@ -64,7 +69,7 @@ export default function CandidateJobsPage() {
       {!jobsQuery.isPending && !jobsQuery.isError && jobs.length === 0 && (
         <Card className="bg-zinc-800 text-white ring-zinc-700">
           <CardHeader>
-            <CardTitle>No matched jobs found</CardTitle>
+            <CardTitle>No matched jobs above {MIN_MATCH_PERCENTAGE}% found</CardTitle>
             <CardDescription className="text-zinc-300">
               Try uploading a better resume or updating your skills.
             </CardDescription>
