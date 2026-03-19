@@ -3,14 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import AuthShell from "@/components/layout/AuthShell";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -115,93 +109,88 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Create your account</CardTitle>
-          <CardDescription>
-            Fill the form below to register as HR or Candidate.
-          </CardDescription>
-        </CardHeader>
+    <AuthShell
+      title="Create Your Account"
+      subtitle="Register as a candidate or HR in one minute."
+      switchText="Already have an account?"
+      switchHref="/login"
+      switchLabel="Sign in"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="fullname">Full Name</Label>
+          <Input
+            id="fullname"
+            name="fullname"
+            placeholder="John Doe"
+            value={formData.fullname}
+            onChange={handleInputChange}
+          />
+        </div>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="fullname">Full Name</Label>
-              <Input
-                id="fullname"
-                name="fullname"
-                placeholder="John Doe"
-                value={formData.fullname}
-                onChange={handleInputChange}
-              />
-            </div>
+        <div className="space-y-2">
+          <Label htmlFor="username">Username</Label>
+          <Input
+            id="username"
+            name="username"
+            placeholder="johndoe"
+            value={formData.username}
+            onChange={handleInputChange}
+          />
+        </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                name="username"
-                placeholder="johndoe"
-                value={formData.username}
-                onChange={handleInputChange}
-              />
-            </div>
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="john@example.com"
+            value={formData.email}
+            onChange={handleInputChange}
+          />
+        </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="john@example.com"
-                value={formData.email}
-                onChange={handleInputChange}
-              />
-            </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            placeholder="At least 8 characters"
+            value={formData.password}
+            onChange={handleInputChange}
+          />
+        </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="At least 8 characters"
-                value={formData.password}
-                onChange={handleInputChange}
-              />
-            </div>
+        <div className="space-y-2">
+          <Label htmlFor="role">Role</Label>
+          <select
+            id="role"
+            name="role"
+            value={formData.role}
+            onChange={handleInputChange}
+            className="field-select"
+          >
+            <option value="CANDIDATE">Candidate</option>
+            <option value="HR">HR</option>
+          </select>
+        </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <select
-                id="role"
-                name="role"
-                value={formData.role}
-                onChange={handleInputChange}
-                className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
-              >
-                <option value="CANDIDATE">Candidate</option>
-                <option value="HR">HR</option>
-              </select>
-            </div>
+        {error && <p className="text-sm text-red-300">{error}</p>}
+        {success && <p className="text-sm text-emerald-300">{success}</p>}
 
-            {error && <p className="text-sm text-red-500">{error}</p>}
-            {success && <p className="text-sm text-green-600">{success}</p>}
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? "Creating account..." : "Create Account"}
+        </Button>
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Creating account..." : "Create Account"}
-            </Button>
-
-            <p className="text-center text-sm text-zinc-600">
-              Already have an account?{" "}
-              <Link href="/" className="font-medium text-zinc-900 underline">
-                Login
-              </Link>
-            </p>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+        <p className="text-center text-sm text-muted-foreground">
+          Need help choosing a role?{" "}
+          <Link href="/login" className="text-link font-medium">
+            Talk to support
+          </Link>
+        </p>
+      </form>
+    </AuthShell>
   );
 }

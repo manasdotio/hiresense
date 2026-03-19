@@ -86,7 +86,7 @@ export default function CandidateJobDetailPage() {
 
   if (loading) {
     return (
-      <Card className="bg-zinc-800 text-white ring-zinc-700">
+      <Card>
         <CardHeader>
           <CardTitle>Loading job details...</CardTitle>
         </CardHeader>
@@ -96,7 +96,7 @@ export default function CandidateJobDetailPage() {
 
   if (jobDetailQuery.isError || !data) {
     return (
-      <Card className="bg-zinc-800 text-white ring-zinc-700">
+      <Card>
         <CardHeader>
           <CardTitle>Could not load job</CardTitle>
           <CardDescription className="text-red-300">{loadError}</CardDescription>
@@ -118,45 +118,45 @@ export default function CandidateJobDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="page-stack">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">{job.title}</h1>
-          <p className="text-sm text-zinc-300">
+          <h2 className="page-title">{job.title}</h2>
+          <p className="page-subtitle">
             Posted by {job.postedBy.fullname} on {formatDate(job.createdAt)}
           </p>
         </div>
 
-        <Link href="/candidate/jobs" className="text-sm text-sky-300 hover:underline">
+        <Link href="/candidate/jobs" className="text-link text-sm">
           Back to Jobs
         </Link>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-zinc-800 text-white ring-zinc-700">
+        <Card>
           <CardHeader>
-            <CardDescription className="text-zinc-300">Status</CardDescription>
+            <CardDescription>Status</CardDescription>
             <CardTitle>{currentStatus}</CardTitle>
           </CardHeader>
         </Card>
 
-        <Card className="bg-zinc-800 text-white ring-zinc-700">
+        <Card>
           <CardHeader>
-            <CardDescription className="text-zinc-300">Min Experience</CardDescription>
+            <CardDescription>Min Experience</CardDescription>
             <CardTitle>{job.minExperience ?? 0} years</CardTitle>
           </CardHeader>
         </Card>
 
-        <Card className="bg-zinc-800 text-white ring-zinc-700">
+        <Card>
           <CardHeader>
-            <CardDescription className="text-zinc-300">Candidates Applied</CardDescription>
+            <CardDescription>Candidates Applied</CardDescription>
             <CardTitle>{job.applicationsCount}</CardTitle>
           </CardHeader>
         </Card>
       </div>
 
       {(message || actionError) && (
-        <Card className="bg-zinc-800 text-white ring-zinc-700">
+        <Card>
           <CardHeader>
             <CardTitle>{actionError ? "Action failed" : "Success"}</CardTitle>
             <CardDescription className={actionError ? "text-red-300" : "text-emerald-300"}>
@@ -166,29 +166,29 @@ export default function CandidateJobDetailPage() {
         </Card>
       )}
 
-      <Card className="bg-zinc-800 text-white ring-zinc-700">
+      <Card>
         <CardHeader>
           <CardTitle>Description</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="whitespace-pre-wrap text-sm text-zinc-200">
+          <p className="whitespace-pre-wrap text-sm text-muted-foreground">
             {job.description}
           </p>
         </CardContent>
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="bg-zinc-800 text-white ring-zinc-700">
+        <Card>
           <CardHeader>
             <CardTitle>Required Skills</CardTitle>
           </CardHeader>
           <CardContent>
             {job.requiredSkills.length === 0 ? (
-              <p className="text-sm text-zinc-300">No required skills listed.</p>
+              <p className="text-sm text-muted-foreground">No required skills listed.</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {job.requiredSkills.map((skill) => (
-                  <span key={skill.id} className="rounded bg-zinc-700 px-2 py-1 text-xs">
+                  <span key={skill.id} className="chip">
                     {skill.name}
                   </span>
                 ))}
@@ -197,17 +197,17 @@ export default function CandidateJobDetailPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-800 text-white ring-zinc-700">
+        <Card>
           <CardHeader>
             <CardTitle>Preferred Skills</CardTitle>
           </CardHeader>
           <CardContent>
             {job.preferredSkills.length === 0 ? (
-              <p className="text-sm text-zinc-300">No preferred skills listed.</p>
+              <p className="text-sm text-muted-foreground">No preferred skills listed.</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {job.preferredSkills.map((skill) => (
-                  <span key={skill.id} className="rounded bg-zinc-700 px-2 py-1 text-xs">
+                  <span key={skill.id} className="chip">
                     {skill.name}
                   </span>
                 ))}
@@ -226,7 +226,7 @@ export default function CandidateJobDetailPage() {
               : "Apply Now"}
         </Button>
 
-        <Link href="/candidate/applications" className="text-sm text-sky-300 hover:underline">
+        <Link href="/candidate/applications" className="text-link text-sm">
           View My Applications
         </Link>
       </div>

@@ -5,15 +5,8 @@ import { z } from "zod";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
+import AuthShell from "@/components/layout/AuthShell";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
@@ -55,63 +48,56 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Login to your account</CardTitle>
-          <CardDescription>
-            Enter your email or username below to login to your account
-          </CardDescription>
-          <CardAction>
-            <Link href="/register">Sign Up</Link>
-          </CardAction>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="identifier">Email or username</Label>
-                <Input placeholder="email or username" {...register("identifier")} />
-                {errors.identifier && (
-                  <p className="text-sm text-red-500">
-                    {errors.identifier.message}
-                    <p className="text-sm text-red-500">{error}</p>
-                  </p>
-                )}
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <a
-                    href="#"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </a>
-                </div>
-                <Input
-                  type="password"
-                  placeholder="Password"
-                  {...register("password")}
-                />
-                {errors.password && (
-                  <p className="text-sm text-red-500">
-                    {errors.password.message}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex-col gap-2 mt-6 flex">
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                Login
-              </Button>
-              <Button variant="outline" className="w-full">
-                Login with Google
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    <AuthShell
+      title="Welcome Back"
+      subtitle="Sign in with your email or username to continue."
+      switchText="New to HireSense?"
+      switchHref="/register"
+      switchLabel="Create account"
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="identifier">Email or Username</Label>
+          <Input
+            id="identifier"
+            placeholder="you@company.com or username"
+            {...register("identifier")}
+          />
+          {errors.identifier?.message && (
+            <p className="text-sm text-red-300">{errors.identifier.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <Label htmlFor="password">Password</Label>
+            <Link href="#" className="text-link text-sm">
+              Forgot password?
+            </Link>
+          </div>
+
+          <Input
+            id="password"
+            type="password"
+            placeholder="Your password"
+            {...register("password")}
+          />
+          {errors.password?.message && (
+            <p className="text-sm text-red-300">{errors.password.message}</p>
+          )}
+        </div>
+
+        {error && <p className="text-sm text-red-300">{error}</p>}
+
+        <div className="space-y-2 pt-1">
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Signing in..." : "Sign In"}
+          </Button>
+          <Button type="button" variant="outline" className="w-full">
+            Continue with Google
+          </Button>
+        </div>
+      </form>
+    </AuthShell>
   );
 }

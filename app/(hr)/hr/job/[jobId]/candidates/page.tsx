@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   useMutation,
   useQuery,
@@ -53,6 +53,8 @@ const statusOptions: ApplicationStatus[] = [
   "INTERVIEW",
   "REJECTED",
 ];
+
+const EMPTY_CANDIDATES: CandidateRow[] = [];
 
 function getRouteParam(value: string | string[] | undefined): string {
   if (Array.isArray(value)) {
@@ -184,7 +186,30 @@ export default function HRJobCandidatesPage() {
     },
   });
 
-  const candidates = candidatesQuery.data?.candidates ?? [];
+  const candidates = candidatesQuery.data?.candidates ?? EMPTY_CANDIDATES;
+  const baseDrafts = useMemo(() => {
+    const nextDrafts: Record<string, DraftDecision> = {};
+
+    for (const candidate of candidates) {
+      nextDrafts[candidate.candidateId] = {
+        status: normalizeStatus(candidate.status),
+        note: candidate.note ?? "",
+      };
+    }
+
+    return nextDrafts;
+  }, [candidates]);
+  const mergedDrafts = useMemo(() => {
+    const merged: Record<string, DraftDecision> = { ...baseDrafts };
+
+    for (const [candidateId, draft] of Object.entries(drafts)) {
+      if (merged[candidateId]) {
+        merged[candidateId] = draft;
+      }
+    }
+
+    return merged;
+  }, [baseDrafts, drafts]);
   const jobTitle = candidatesQuery.data?.jobTitle ?? "Job Candidates";
   const loading = candidatesQuery.isPending;
   const queryError =
@@ -192,17 +217,6 @@ export default function HRJobCandidatesPage() {
       ? candidatesQuery.error.message
       : null;
   const activeError = error ?? queryError;
-
-  useEffect(() => {
-    const nextDrafts: Record<string, DraftDecision> = {};
-    for (const candidate of candidates) {
-      nextDrafts[candidate.candidateId] = {
-        status: normalizeStatus(candidate.status),
-        note: candidate.note ?? "",
-      };
-    }
-    setDrafts(nextDrafts);
-  }, [candidates]);
 
   function updateDraft(candidateId: string, partial: Partial<DraftDecision>) {
     setDrafts((current) => {
@@ -226,7 +240,7 @@ export default function HRJobCandidatesPage() {
       return;
     }
 
-    const draft = drafts[candidateId];
+    const draft = mergedDrafts[candidateId];
     if (!draft) {
       return;
     }
@@ -240,17 +254,17 @@ export default function HRJobCandidatesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="page-stack">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold">Candidates for {jobTitle}</h2>
-          <p className="text-sm text-zinc-400">
+        <div className="section-head">
+          <h2 className="page-title">Candidates for {jobTitle}</h2>
+          <p className="page-subtitle">
             Ranked by match score. Update status and notes for each candidate.
           </p>
         </div>
 
         <div className="flex gap-3">
-          <Link href={`/hr/job/${jobId}`} className="text-sm text-sky-400 hover:underline">
+          <Link href={`/hr/job/${jobId}`} className="text-link text-sm">
             Back to Job
           </Link>
           <Button
@@ -290,45 +304,45 @@ export default function HRJobCandidatesPage() {
         </CardHeader>
         <CardContent className="overflow-x-auto">
           {loading ? (
-            <p className="text-sm text-zinc-400">Loading candidates...</p>
+            <p className="text-sm text-muted-foreground">Loading candidates...</p>
           ) : candidates.length === 0 ? (
-            <p className="text-sm text-zinc-400">
+            <p className="text-sm text-muted-foreground">
               No matched candidates found for this job yet.
             </p>
           ) : (
-            <table className="min-w-full text-sm">
+            <table className="data-table">
               <thead>
-                <tr className="border-b border-zinc-800 text-left text-zinc-400">
-                  <th className="py-2 pr-4">Candidate</th>
-                  <th className="py-2 pr-4">Match</th>
-                  <th className="py-2 pr-4">Missing Skills</th>
-                  <th className="py-2 pr-4">Status</th>
-                  <th className="py-2 pr-4">Note</th>
-                  <th className="py-2 pr-4">Updated</th>
-                  <th className="py-2">Action</th>
+                <tr>
+                  <th>Candidate</th>
+                  <th>Match</th>
+                  <th>Missing Skills</th>
+                  <th>Status</th>
+                  <th>Note</th>
+                  <th>Updated</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {candidates.map((candidate) => {
-                  const draft = drafts[candidate.candidateId] ?? {
+                  const draft = mergedDrafts[candidate.candidateId] ?? {
                     status: normalizeStatus(candidate.status),
                     note: candidate.note ?? "",
                   };
 
                   return (
-                    <tr key={candidate.candidateId} className="border-b border-zinc-900">
-                      <td className="py-3 pr-4 font-medium">{candidate.name}</td>
-                      <td className="py-3 pr-4">
+                    <tr key={candidate.candidateId}>
+                      <td className="font-medium">{candidate.name}</td>
+                      <td>
                         {candidate.matchPercentage.toFixed(1)}%
                       </td>
-                      <td className="py-3 pr-4 text-zinc-400">
+                      <td className="text-muted-foreground">
                         {candidate.missingSkills.length === 0
                           ? "None"
                           : candidate.missingSkills.join(", ")}
                       </td>
-                      <td className="py-3 pr-4">
+                      <td>
                         <select
-                          className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm"
+                          className="field-select h-9 px-2.5"
                           value={draft.status}
                           onChange={(event) =>
                             updateDraft(candidate.candidateId, {
@@ -337,13 +351,13 @@ export default function HRJobCandidatesPage() {
                           }
                         >
                           {statusOptions.map((status) => (
-                            <option key={status} value={status} className="text-black">
+                            <option key={status} value={status}>
                               {status}
                             </option>
                           ))}
                         </select>
                       </td>
-                      <td className="py-3 pr-4">
+                      <td>
                         <Input
                           value={draft.note}
                           onChange={(event) =>
@@ -354,10 +368,10 @@ export default function HRJobCandidatesPage() {
                           placeholder="Optional note"
                         />
                       </td>
-                      <td className="py-3 pr-4 text-zinc-400">
+                      <td className="text-muted-foreground">
                         {formatUpdatedAt(candidate.statusUpdatedAt)}
                       </td>
-                      <td className="py-3">
+                      <td>
                         <Button
                           size="sm"
                           onClick={() => saveDecision(candidate.candidateId)}

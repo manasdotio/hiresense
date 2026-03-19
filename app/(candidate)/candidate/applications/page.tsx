@@ -16,10 +16,10 @@ function formatDate(value: string): string {
 }
 
 function statusClass(status: string): string {
-  if (status === "SHORTLISTED") return "bg-blue-900 text-blue-200";
-  if (status === "INTERVIEW") return "bg-purple-900 text-purple-200";
-  if (status === "REJECTED") return "bg-red-900 text-red-200";
-  return "bg-emerald-900 text-emerald-200";
+  if (status === "SHORTLISTED") return "status-pill status-info";
+  if (status === "INTERVIEW") return "status-pill status-warning";
+  if (status === "REJECTED") return "status-pill status-danger";
+  return "status-pill status-success";
 }
 
 export default function CandidateApplicationsPage() {
@@ -35,16 +35,16 @@ export default function CandidateApplicationsPage() {
       : "Failed to load applications";
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">My Applications</h1>
-        <p className="text-sm text-zinc-300">
+    <div className="page-stack">
+      <div className="section-head">
+        <h2 className="page-title">My Applications</h2>
+        <p className="page-subtitle">
           Track all jobs you have applied for and their latest status.
         </p>
       </div>
 
       {applicationsQuery.isPending && (
-        <Card className="bg-zinc-800 text-white ring-zinc-700">
+        <Card>
           <CardHeader>
             <CardTitle>Loading applications...</CardTitle>
           </CardHeader>
@@ -52,7 +52,7 @@ export default function CandidateApplicationsPage() {
       )}
 
       {applicationsQuery.isError && (
-        <Card className="bg-zinc-800 text-white ring-zinc-700">
+        <Card>
           <CardHeader>
             <CardTitle>Could not load applications</CardTitle>
             <CardDescription className="text-red-300">{errorMessage}</CardDescription>
@@ -63,10 +63,10 @@ export default function CandidateApplicationsPage() {
       {!applicationsQuery.isPending &&
         !applicationsQuery.isError &&
         applications.length === 0 && (
-          <Card className="bg-zinc-800 text-white ring-zinc-700">
+          <Card>
             <CardHeader>
               <CardTitle>No applications yet</CardTitle>
-              <CardDescription className="text-zinc-300">
+              <CardDescription>
                 Visit jobs page and apply to start your application history.
               </CardDescription>
             </CardHeader>
@@ -76,7 +76,7 @@ export default function CandidateApplicationsPage() {
       {!applicationsQuery.isPending &&
         !applicationsQuery.isError &&
         applications.length > 0 && (
-          <Card className="bg-zinc-800 text-white ring-zinc-700">
+          <Card>
             <CardHeader>
               <CardTitle>Application History</CardTitle>
             </CardHeader>
@@ -84,11 +84,11 @@ export default function CandidateApplicationsPage() {
               {applications.map((application) => (
                 <div
                   key={`${application.jobId}-${application.appliedAt}`}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-zinc-700 p-3"
+                  className="surface-soft flex flex-wrap items-center justify-between gap-3 p-3"
                 >
                   <div>
                     <p className="font-medium">{application.jobTitle}</p>
-                    <p className="text-xs text-zinc-300">
+                    <p className="text-xs text-muted-foreground">
                       Applied on {formatDate(application.appliedAt)}
                     </p>
                   </div>
@@ -100,7 +100,7 @@ export default function CandidateApplicationsPage() {
 
                     <Link
                       href={`/candidate/job/${application.jobId}`}
-                      className="text-sm text-sky-300 hover:underline"
+                      className="text-link text-sm"
                     >
                       View Job
                     </Link>

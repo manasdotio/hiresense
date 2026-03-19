@@ -272,24 +272,23 @@ export default function HRJobDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="page-stack">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold">{data.job.title}</h2>
-          <p className="text-sm text-zinc-400">
+          <h2 className="page-title">{data.job.title}</h2>
+          <p className="page-subtitle">
             Posted by {data.job.postedBy.fullname} on {formatDate(data.job.createdAt)}
           </p>
         </div>
 
         <div className="flex gap-3">
-          <Link href={`/hr/job/${jobId}/candidates`} className="text-sm text-sky-400 hover:underline">
+          <Link href={`/hr/job/${jobId}/candidates`} className="text-link text-sm">
             View Candidates
           </Link>
           <Button
             variant="outline"
             onClick={() => void jobQuery.refetch()}
             disabled={jobQuery.isFetching || updateJobMutation.isPending || deleteJobMutation.isPending}
-           className="text-black"
           >
             Refresh
           </Button>
@@ -342,11 +341,11 @@ export default function HRJobDetailPage() {
           </CardHeader>
           <CardContent>
             {data.job.requiredSkills.length === 0 ? (
-              <p className="text-sm text-zinc-400">No required skills found.</p>
+              <p className="text-sm text-muted-foreground">No required skills found.</p>
             ) : (
               <div className="flex flex-wrap gap-2 text-sm">
                 {data.job.requiredSkills.map((skill) => (
-                  <span key={skill.id} className="rounded text-white bg-zinc-800 px-2 py-1">
+                  <span key={skill.id} className="chip text-sm">
                     {skill.name}
                   </span>
                 ))}
@@ -361,11 +360,11 @@ export default function HRJobDetailPage() {
           </CardHeader>
           <CardContent>
             {data.job.preferredSkills.length === 0 ? (
-              <p className="text-sm text-zinc-400 ">No preferred skills found.</p>
+              <p className="text-sm text-muted-foreground">No preferred skills found.</p>
             ) : (
-              <div className="flex flex-wrap gap-2 text-white text-sm">
+              <div className="flex flex-wrap gap-2 text-sm">
                 {data.job.preferredSkills.map((skill) => (
-                  <span key={skill.id} className="rounded bg-zinc-800 px-2 py-1">
+                  <span key={skill.id} className="chip text-sm">
                     {skill.name}
                   </span>
                 ))}
@@ -384,10 +383,10 @@ export default function HRJobDetailPage() {
             {statusOrder.map((status) => (
               <div
                 key={status}
-                className="rounded border border-zinc-800 bg-zinc-900 p-3 text-sm"
+                className="surface-soft p-3 text-sm"
               >
-                <p className="text-zinc-400">{status}</p>
-                <p className="text-xl font-semibold text-white">{data.pipeline?.[status] ?? 0}</p>
+                <p className="text-muted-foreground">{status}</p>
+                <p className="text-xl font-semibold text-foreground">{data.pipeline?.[status] ?? 0}</p>
               </div>
             ))}
           </CardContent>
@@ -419,7 +418,7 @@ export default function HRJobDetailPage() {
             </label>
             <textarea
               id="edit-description"
-              className="min-h-36 w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring"
+              className="field-textarea"
               value={description}
               onChange={(event) => setDescriptionDraft(event.target.value)}
             />
