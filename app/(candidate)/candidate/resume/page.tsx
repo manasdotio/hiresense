@@ -31,14 +31,14 @@ function formatPercent(value: number): string {
 function ResumeStatusBadge({ isProcessed }: { isProcessed: boolean }) {
   if (isProcessed) {
     return (
-      <span className="rounded bg-emerald-900 px-2 py-1 text-xs text-emerald-200">
+      <span className="status-pill status-success">
         Processed
       </span>
     );
   }
 
   return (
-    <span className="rounded bg-amber-900 px-2 py-1 text-xs text-amber-200">
+    <span className="status-pill status-warning">
       Pending
     </span>
   );
@@ -237,16 +237,16 @@ export default function ResumePage() {
       : "Failed to load resumes";
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Resume</h1>
-        <p className="text-sm text-zinc-300">
+    <div className="page-stack">
+      <div className="section-head">
+        <h2 className="page-title">Resume</h2>
+        <p className="page-subtitle">
           Upload, process, and manage your resume history.
         </p>
       </div>
 
       {resumesQuery.isError && (
-        <Card className="bg-zinc-800 text-white ring-zinc-700">
+        <Card>
           <CardHeader>
             <CardTitle>Could not load resumes</CardTitle>
             <CardDescription className="text-red-300">{loadError}</CardDescription>
@@ -254,10 +254,10 @@ export default function ResumePage() {
         </Card>
       )}
 
-      <Card className="bg-zinc-800 text-white ring-zinc-700">
+      <Card>
         <CardHeader>
           <CardTitle>Upload and Process</CardTitle>
-          <CardDescription className="text-zinc-300">
+          <CardDescription>
             Upload a PDF and process it automatically.
           </CardDescription>
         </CardHeader>
@@ -283,54 +283,54 @@ export default function ResumePage() {
 
       {summary && (
         <div className="grid gap-4 md:grid-cols-3">
-          <Card className="bg-zinc-800 text-white ring-zinc-700">
+          <Card>
             <CardHeader>
-              <CardDescription className="text-zinc-300">Total Resumes</CardDescription>
+              <CardDescription>Total Resumes</CardDescription>
               <CardTitle>{summary.totalResumes}</CardTitle>
             </CardHeader>
           </Card>
 
-          <Card className="bg-zinc-800 text-white ring-zinc-700">
+          <Card>
             <CardHeader>
-              <CardDescription className="text-zinc-300">Processed</CardDescription>
+              <CardDescription>Processed</CardDescription>
               <CardTitle>{summary.processedResumes}</CardTitle>
             </CardHeader>
           </Card>
 
-          <Card className="bg-zinc-800 text-white ring-zinc-700">
+          <Card>
             <CardHeader>
-              <CardDescription className="text-zinc-300">Pending</CardDescription>
+              <CardDescription>Pending</CardDescription>
               <CardTitle>{pendingResumes}</CardTitle>
             </CardHeader>
           </Card>
         </div>
       )}
 
-      <Card className="bg-zinc-800 text-white ring-zinc-700">
+      <Card>
         <CardHeader>
           <CardTitle>Resume History</CardTitle>
-          <CardDescription className="text-zinc-300">
+          <CardDescription>
             Process pending resumes or remove old ones.
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-3">
           {resumesQuery.isPending ? (
-            <p className="text-sm text-zinc-300">Loading resumes...</p>
+            <p className="text-sm text-muted-foreground">Loading resumes...</p>
           ) : resumes.length === 0 ? (
-            <p className="text-sm text-zinc-300">No resumes uploaded yet.</p>
+            <p className="text-sm text-muted-foreground">No resumes uploaded yet.</p>
           ) : (
             resumes.map((resume) => (
               <div
                 key={resume.resumeId}
-                className="space-y-3 rounded-lg border border-zinc-700 bg-zinc-900 p-3"
+                className="surface-soft space-y-3 p-3"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="space-y-1">
-                    <p className="text-xs text-zinc-400">
+                    <p className="text-xs text-muted-foreground">
                       Uploaded: {formatDate(resume.uploadedAt)}
                     </p>
-                    <p className="text-xs text-zinc-400">
+                    <p className="text-xs text-muted-foreground">
                       Extracted skills: {resume.skillsCount}
                     </p>
                   </div>
@@ -338,7 +338,7 @@ export default function ResumePage() {
                   <ResumeStatusBadge isProcessed={resume.isProcessed} />
                 </div>
 
-                <p className="text-sm text-zinc-300">{resume.textPreview}</p>
+                <p className="text-sm text-muted-foreground">{resume.textPreview}</p>
 
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -346,7 +346,6 @@ export default function ResumePage() {
                     variant="outline"
                     onClick={() => setSelectedResumeId(resume.resumeId)}
                     disabled={!resume.isProcessed}
-                    className="text-black"
                   >
                     View Matches
                   </Button>
@@ -378,21 +377,21 @@ export default function ResumePage() {
         </CardContent>
       </Card>
 
-      <Card className="bg-zinc-800 text-white ring-zinc-700">
+      <Card>
         <CardHeader>
           <CardTitle>Matched Jobs</CardTitle>
-          <CardDescription className="text-zinc-300">
+          <CardDescription>
             Select a processed resume to see job matches.
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-3">
           {!activeResumeId ? (
-            <p className="text-sm text-zinc-300">
+            <p className="text-sm text-muted-foreground">
               No processed resume selected yet.
             </p>
           ) : matchesQuery.isPending ? (
-            <p className="text-sm text-zinc-300">Loading matches...</p>
+            <p className="text-sm text-muted-foreground">Loading matches...</p>
           ) : matchesQuery.isError ? (
             <p className="text-sm text-red-300">
               {matchesQuery.error instanceof Error
@@ -400,16 +399,16 @@ export default function ResumePage() {
                 : "Failed to load matches"}
             </p>
           ) : (matchesQuery.data ?? []).length === 0 ? (
-            <p className="text-sm text-zinc-300">No matches found for now.</p>
+            <p className="text-sm text-muted-foreground">No matches found for now.</p>
           ) : (
             <div className="space-y-2">
               {(matchesQuery.data ?? []).slice(0, 8).map((match) => (
                 <div
                   key={match.jobId}
-                  className="flex items-center justify-between rounded border border-zinc-700 px-3 py-2"
+                  className="surface-soft flex items-center justify-between px-3 py-2"
                 >
                   <p className="text-sm">{match.jobTitle}</p>
-                  <p className="text-xs text-zinc-300">
+                  <p className="text-xs text-muted-foreground">
                     {formatPercent(match.matchPercentage)}
                   </p>
                 </div>
@@ -420,17 +419,14 @@ export default function ResumePage() {
       </Card>
 
       {skills.length > 0 && (
-        <Card className="bg-zinc-800 text-white ring-zinc-700">
+        <Card>
           <CardHeader>
             <CardTitle>Extracted Skills</CardTitle>
           </CardHeader>
 
           <CardContent className="flex flex-wrap gap-2">
             {skills.map((skill, i) => (
-              <span
-                key={i}
-                className="rounded bg-zinc-700 px-3 py-1 text-sm text-zinc-100"
-              >
+              <span key={i} className="chip text-sm">
                 {skill}
               </span>
             ))}

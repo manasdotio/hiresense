@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <title>HireSense Logo</title>
+  <defs>
+    <linearGradient id="hs-bg" x1="14" y1="10" x2="114" y2="118" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22D3EE" />
+      <stop offset="0.55" stop-color="#38BDF8" />
+      <stop offset="1" stop-color="#34D399" />
+    </linearGradient>
+    <linearGradient id="hs-panel" x1="20" y1="16" x2="108" y2="112" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0E203A" />
+      <stop offset="1" stop-color="#111827" />
+    </linearGradient>
+    <linearGradient id="hs-letter" x1="34" y1="34" x2="93" y2="95" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ECFEFF" />
+      <stop offset="1" stop-color="#BAE6FD" />
+    </linearGradient>
+    <radialGradient id="hs-accent" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(95 34) rotate(90) scale(10)">
+      <stop stop-color="#FDE047" />
+      <stop offset="1" stop-color="#F59E0B" />
+    </radialGradient>
+  </defs>
+
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#hs-bg)" />
+  <rect x="11" y="11" width="106" height="106" rx="25" fill="url(#hs-panel)" fill-opacity="0.88" />
+
+  <path d="M35 33.5C35 31.57 36.57 30 38.5 30H48.5C50.43 30 52 31.57 52 33.5V56H76V33.5C76 31.57 77.57 30 79.5 30H89.5C91.43 30 93 31.57 93 33.5V94.5C93 96.43 91.43 98 89.5 98H79.5C77.57 98 76 96.43 76 94.5V72H52V94.5C52 96.43 50.43 98 48.5 98H38.5C36.57 98 35 96.43 35 94.5V33.5Z" fill="url(#hs-letter)" />
+
+  <circle cx="95" cy="34" r="8" fill="url(#hs-accent)" />
+  <path d="M95 28L96.5 32.5L101 34L96.5 35.5L95 40L93.5 35.5L89 34L93.5 32.5L95 28Z" fill="#0F172A" />
+
+  <rect x="8.75" y="8.75" width="110.5" height="110.5" rx="27.25" stroke="#67E8F9" stroke-opacity="0.45" stroke-width="1.5" />
+</svg>

@@ -40,17 +40,17 @@ export default function CandidateJobsPage() {
       : "Failed to load jobs";
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Matched Jobs</h1>
-        <p className="text-sm text-zinc-300">
+    <div className="page-stack">
+      <div className="section-head">
+        <h2 className="page-title">Matched Jobs</h2>
+        <p className="page-subtitle">
           Jobs are shown based on your latest processed resume and must score above
           {` ${MIN_MATCH_PERCENTAGE}%`}.
         </p>
       </div>
 
       {jobsQuery.isPending && (
-        <Card className="bg-zinc-800 text-white ring-zinc-700">
+        <Card>
           <CardHeader>
             <CardTitle>Loading jobs...</CardTitle>
           </CardHeader>
@@ -58,7 +58,7 @@ export default function CandidateJobsPage() {
       )}
 
       {jobsQuery.isError && (
-        <Card className="bg-zinc-800 text-white ring-zinc-700">
+        <Card>
           <CardHeader>
             <CardTitle>Could not load jobs</CardTitle>
             <CardDescription className="text-red-300">{errorMessage}</CardDescription>
@@ -67,10 +67,10 @@ export default function CandidateJobsPage() {
       )}
 
       {!jobsQuery.isPending && !jobsQuery.isError && jobs.length === 0 && (
-        <Card className="bg-zinc-800 text-white ring-zinc-700">
+        <Card>
           <CardHeader>
             <CardTitle>No matched jobs above {MIN_MATCH_PERCENTAGE}% found</CardTitle>
-            <CardDescription className="text-zinc-300">
+            <CardDescription>
               Try uploading a better resume or updating your skills.
             </CardDescription>
           </CardHeader>
@@ -80,43 +80,40 @@ export default function CandidateJobsPage() {
       {!jobsQuery.isPending && !jobsQuery.isError && jobs.length > 0 && (
         <div className="grid gap-4 md:grid-cols-2">
           {jobs.map((job) => (
-            <Card key={job.id} className="bg-zinc-800 text-white ring-zinc-700">
+            <Card key={job.id}>
               <CardHeader>
                 <CardTitle>{job.title}</CardTitle>
-                <CardDescription className="text-zinc-300">
+                <CardDescription>
                   Posted by {job.postedBy} on {formatDate(job.createdAt)}
                 </CardDescription>
               </CardHeader>
 
               <CardContent className="space-y-4">
-                <p className="text-sm text-zinc-200">
+                <p className="text-sm text-muted-foreground">
                   {shortText(job.description, 180)}
                 </p>
 
-                <div className="text-xs text-zinc-300">
+                <div className="text-xs text-muted-foreground">
                   Min Experience: {job.minExperience ?? 0} years
                 </div>
 
-                <div className="text-xs text-zinc-300">
+                <div className="text-xs text-muted-foreground">
                   Match Score: {(job.matchPercentage ?? 0).toFixed(1)}%
                 </div>
 
                 <div>
-                  <p className="mb-2 text-xs uppercase tracking-wide text-zinc-400">
+                  <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
                     Required Skills
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {job.requiredSkills.length === 0 && (
-                      <span className="rounded bg-zinc-700 px-2 py-1 text-xs text-zinc-300">
+                      <span className="chip">
                         Not available
                       </span>
                     )}
 
                     {job.requiredSkills.slice(0, 6).map((skill) => (
-                      <span
-                        key={`${job.id}-${skill}`}
-                        className="rounded bg-zinc-700 px-2 py-1 text-xs"
-                      >
+                      <span key={`${job.id}-${skill}`} className="chip">
                         {skill}
                       </span>
                     ))}
@@ -125,18 +122,18 @@ export default function CandidateJobsPage() {
 
                 <div className="flex items-center justify-between">
                   {job.hasApplied ? (
-                    <span className="rounded bg-emerald-900 px-2 py-1 text-xs text-emerald-200">
+                    <span className="status-pill status-success">
                       Already applied
                     </span>
                   ) : (
-                    <span className="rounded bg-amber-900 px-2 py-1 text-xs text-amber-200">
+                    <span className="status-pill status-warning">
                       Not applied
                     </span>
                   )}
 
                   <Link
                     href={`/candidate/job/${job.id}`}
-                    className="text-sm font-medium text-sky-300 hover:underline"
+                    className="text-link text-sm font-medium"
                   >
                     View Details
                   </Link>

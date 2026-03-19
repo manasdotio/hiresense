@@ -16,10 +16,10 @@ function formatDate(value: string): string {
 }
 
 function statusClass(status: string): string {
-  if (status === "SHORTLISTED") return "bg-blue-900 text-blue-200";
-  if (status === "INTERVIEW") return "bg-purple-900 text-purple-200";
-  if (status === "REJECTED") return "bg-red-900 text-red-200";
-  return "bg-emerald-900 text-emerald-200";
+  if (status === "SHORTLISTED") return "status-pill status-info";
+  if (status === "INTERVIEW") return "status-pill status-warning";
+  if (status === "REJECTED") return "status-pill status-danger";
+  return "status-pill status-success";
 }
 
 export default function CandidateDashboardPage() {
@@ -35,16 +35,16 @@ export default function CandidateDashboardPage() {
       : "Failed to load dashboard";
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-sm text-zinc-300">
+    <div className="page-stack">
+      <div className="section-head">
+        <h2 className="page-title">Dashboard</h2>
+        <p className="page-subtitle">
           A quick summary of your resumes, jobs, and applications.
         </p>
       </div>
 
       {dashboardQuery.isPending && (
-        <Card className="bg-zinc-800 text-white ring-zinc-700">
+        <Card>
           <CardHeader>
             <CardTitle>Loading dashboard...</CardTitle>
           </CardHeader>
@@ -52,7 +52,7 @@ export default function CandidateDashboardPage() {
       )}
 
       {dashboardQuery.isError && (
-        <Card className="bg-zinc-800 text-white ring-zinc-700">
+        <Card>
           <CardHeader>
             <CardTitle>Could not load dashboard</CardTitle>
             <CardDescription className="text-red-300">{errorMessage}</CardDescription>
@@ -63,7 +63,7 @@ export default function CandidateDashboardPage() {
       {!dashboardQuery.isPending && !dashboardQuery.isError && data && (
         <>
           {!data.matchingReady && (
-            <Card className="bg-zinc-800 text-white ring-zinc-700">
+            <Card>
               <CardHeader>
                 <CardTitle>Matching Locked</CardTitle>
                 <CardDescription className="text-amber-300">
@@ -75,105 +75,105 @@ export default function CandidateDashboardPage() {
           )}
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Card className="bg-zinc-800 text-white ring-zinc-700">
+            <Card>
               <CardHeader>
-                <CardDescription className="text-zinc-300">Usable Resumes</CardDescription>
+                <CardDescription>Usable Resumes</CardDescription>
                 <CardTitle>{data.summary.totalResumes}</CardTitle>
               </CardHeader>
             </Card>
 
-            <Card className="bg-zinc-800 text-white ring-zinc-700">
+            <Card>
               <CardHeader>
-                <CardDescription className="text-zinc-300">Pending Resumes</CardDescription>
+                <CardDescription>Pending Resumes</CardDescription>
                 <CardTitle>{data.summary.pendingResumes}</CardTitle>
               </CardHeader>
             </Card>
 
-            <Card className="bg-zinc-800 text-white ring-zinc-700">
+            <Card>
               <CardHeader>
-                <CardDescription className="text-zinc-300">Open Jobs</CardDescription>
+                <CardDescription>Open Jobs</CardDescription>
                 <CardTitle>{data.summary.openJobs}</CardTitle>
               </CardHeader>
             </Card>
 
-            <Card className="bg-zinc-800 text-white ring-zinc-700">
+            <Card>
               <CardHeader>
-                <CardDescription className="text-zinc-300">Total Applications</CardDescription>
+                <CardDescription>Total Applications</CardDescription>
                 <CardTitle>{data.summary.totalApplications}</CardTitle>
               </CardHeader>
             </Card>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Card className="bg-zinc-800 text-white ring-zinc-700">
+            <Card>
               <CardHeader>
-                <CardDescription className="text-zinc-300">Applied</CardDescription>
+                <CardDescription>Applied</CardDescription>
                 <CardTitle>{data.summary.applied}</CardTitle>
               </CardHeader>
             </Card>
 
-            <Card className="bg-zinc-800 text-white ring-zinc-700">
+            <Card>
               <CardHeader>
-                <CardDescription className="text-zinc-300">Shortlisted</CardDescription>
+                <CardDescription>Shortlisted</CardDescription>
                 <CardTitle>{data.summary.shortlisted}</CardTitle>
               </CardHeader>
             </Card>
 
-            <Card className="bg-zinc-800 text-white ring-zinc-700">
+            <Card>
               <CardHeader>
-                <CardDescription className="text-zinc-300">Interview</CardDescription>
+                <CardDescription>Interview</CardDescription>
                 <CardTitle>{data.summary.interview}</CardTitle>
               </CardHeader>
             </Card>
 
-            <Card className="bg-zinc-800 text-white ring-zinc-700">
+            <Card>
               <CardHeader>
-                <CardDescription className="text-zinc-300">Rejected</CardDescription>
+                <CardDescription>Rejected</CardDescription>
                 <CardTitle>{data.summary.rejected}</CardTitle>
               </CardHeader>
             </Card>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-3">
-            <Card className="bg-zinc-800 text-white ring-zinc-700 lg:col-span-1">
+            <Card className="lg:col-span-1">
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
-                <Link href="/candidate/profile" className="block text-sky-300 hover:underline">
+                <Link href="/candidate/profile" className="text-link block">
                   Edit profile details
                 </Link>
-                <Link href="/candidate/resume" className="block text-sky-300 hover:underline">
+                <Link href="/candidate/resume" className="text-link block">
                   Upload or process resume
                 </Link>
-                <Link href="/candidate/jobs" className="block text-sky-300 hover:underline">
+                <Link href="/candidate/jobs" className="text-link block">
                   View matched jobs
                 </Link>
                 <Link
                   href="/candidate/applications"
-                  className="block text-sky-300 hover:underline"
+                  className="text-link block"
                 >
                   Track my applications
                 </Link>
               </CardContent>
             </Card>
 
-            <Card className="bg-zinc-800 text-white ring-zinc-700 lg:col-span-2">
+            <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle>Recent Applications</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {data.recentApplications.length === 0 ? (
-                  <p className="text-sm text-zinc-300">You have not applied to any jobs yet.</p>
+                  <p className="text-sm text-muted-foreground">You have not applied to any jobs yet.</p>
                 ) : (
                   data.recentApplications.map((application) => (
                     <div
                       key={`${application.jobId}-${application.appliedAt}`}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-zinc-700 p-3"
+                      className="surface-soft flex flex-wrap items-center justify-between gap-3 p-3"
                     >
                       <div>
                         <p className="font-medium">{application.jobTitle}</p>
-                        <p className="text-xs text-zinc-300">
+                        <p className="text-xs text-muted-foreground">
                           Applied on {formatDate(application.appliedAt)}
                         </p>
                       </div>
@@ -190,34 +190,34 @@ export default function CandidateDashboardPage() {
             </Card>
           </div>
 
-          <Card className="bg-zinc-800 text-white ring-zinc-700">
+          <Card>
             <CardHeader>
               <CardTitle>Jobs You Can Apply Now</CardTitle>
-              <CardDescription className="text-zinc-300">
+              <CardDescription>
                 Showing up to 5 matched jobs you have not applied to yet.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {!data.matchingReady ? (
-                <p className="text-sm text-zinc-300">
+                <p className="text-sm text-muted-foreground">
                   Upload and process at least one resume first.
                 </p>
               ) : data.openJobsPreview.length === 0 ? (
-                <p className="text-sm text-zinc-300">No open jobs available right now.</p>
+                <p className="text-sm text-muted-foreground">No open jobs available right now.</p>
               ) : (
                 data.openJobsPreview.map((job) => (
                   <div
                     key={job.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-zinc-700 p-3"
+                    className="surface-soft flex flex-wrap items-center justify-between gap-3 p-3"
                   >
                     <div>
                       <p className="font-medium">{job.title}</p>
-                      <p className="text-xs text-zinc-300">Min experience: {job.minExperience ?? 0} years</p>
+                      <p className="text-xs text-muted-foreground">Min experience: {job.minExperience ?? 0} years</p>
                     </div>
 
                     <Link
                       href={`/candidate/job/${job.id}`}
-                      className="text-sm text-sky-300 hover:underline"
+                      className="text-link text-sm"
                     >
                       View Job
                     </Link>
@@ -227,21 +227,21 @@ export default function CandidateDashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-zinc-800 text-white ring-zinc-700">
+          <Card>
             <CardHeader>
               <CardTitle>Latest Processed Resumes</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {data.latestResumes.length === 0 ? (
-                <p className="text-sm text-zinc-300">No processed resumes yet.</p>
+                <p className="text-sm text-muted-foreground">No processed resumes yet.</p>
               ) : (
                 data.latestResumes.map((resume) => (
                   <div
                     key={resume.resumeId}
-                    className="rounded-lg border border-zinc-700 p-3"
+                    className="surface-soft p-3"
                   >
-                    <p className="text-sm text-zinc-200">Uploaded: {formatDate(resume.uploadedAt)}</p>
-                    <p className="text-xs text-zinc-300">Skills extracted: {resume.skillsCount}</p>
+                    <p className="text-sm text-foreground">Uploaded: {formatDate(resume.uploadedAt)}</p>
+                    <p className="text-xs text-muted-foreground">Skills extracted: {resume.skillsCount}</p>
                   </div>
                 ))
               )}

@@ -158,11 +158,11 @@ export default function HRJobsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="page-stack">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold">Manage Jobs</h2>
-          <p className="text-sm text-zinc-400">
+        <div className="section-head">
+          <h2 className="page-title">Manage Jobs</h2>
+          <p className="page-subtitle">
             Create jobs, review AI-extracted skills, and move to candidates.
           </p>
         </div>
@@ -171,7 +171,6 @@ export default function HRJobsPage() {
           variant="outline"
           onClick={() => void handleRefresh()}
           disabled={jobsQuery.isFetching || createJobMutation.isPending}
-          className="text-black"
         >
           {jobsQuery.isFetching ? "Refreshing..." : "Refresh"}
         </Button>
@@ -222,7 +221,7 @@ export default function HRJobsPage() {
               </label>
               <textarea
                 id="job-description"
-                className="min-h-36 w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring"
+                className="field-textarea"
                 placeholder="Describe responsibilities, required skills, and expectations..."
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
@@ -258,9 +257,9 @@ export default function HRJobsPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-sm text-zinc-400">Loading jobs...</p>
+            <p className="text-sm text-muted-foreground">Loading jobs...</p>
           ) : jobs.length === 0 ? (
-            <p className="text-sm text-zinc-400">No jobs yet. Create your first posting.</p>
+            <p className="text-sm text-muted-foreground">No jobs yet. Create your first posting.</p>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {jobs.map((job) => (
@@ -272,40 +271,37 @@ export default function HRJobsPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <p className="text-sm text-zinc-300">{job.description}</p>
+                    <p className="text-sm text-muted-foreground">{job.description}</p>
 
                     <div>
-                      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-400">
+                      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                         Required Skills
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {job.requiredSkills.length === 0 && (
-                          <span className="rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-400">
+                          <span className="chip">
                             None extracted yet
                           </span>
                         )}
                         {job.requiredSkills.slice(0, 8).map((skill) => (
-                          <span
-                            key={`${job.id}-required-${skill}`}
-                            className="rounded text-white bg-zinc-800 px-2 py-1 text-xs"
-                          >
+                          <span key={`${job.id}-required-${skill}`} className="chip">
                             {skill}
                           </span>
                         ))}
                       </div>
                     </div>
 
-                    <div className="text-xs text-zinc-400">
+                    <div className="text-xs text-muted-foreground">
                       Applications: {job.applicationsCount} • Matches: {job.matchesCount}
                     </div>
 
                     <div className="flex gap-3 text-sm">
-                      <Link href={`/hr/job/${job.id}`} className="text-sky-400 hover:underline">
+                      <Link href={`/hr/job/${job.id}`} className="text-link">
                         View Details
                       </Link>
                       <Link
                         href={`/hr/job/${job.id}/candidates`}
-                        className="text-sky-400 hover:underline"
+                        className="text-link"
                       >
                         View Candidates
                       </Link>

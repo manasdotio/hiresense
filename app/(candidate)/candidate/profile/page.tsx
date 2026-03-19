@@ -45,12 +45,12 @@ function isEmailValid(email: string): boolean {
 
 function AccountInfoCard({ profile }: { profile: CandidateProfile }) {
   return (
-    <Card className="bg-zinc-800 text-white ring-zinc-700">
+    <Card>
       <CardHeader>
         <CardTitle>Account Info</CardTitle>
       </CardHeader>
 
-      <CardContent className="space-y-2 text-sm text-zinc-200">
+      <CardContent className="space-y-2 text-sm text-muted-foreground">
         <p>Role: {profile.role}</p>
         <p>Joined: {new Date(profile.joinedAt).toLocaleDateString()}</p>
       </CardContent>
@@ -225,10 +225,10 @@ function ProfilePanel({ profile }: { profile: CandidateProfile }) {
   if (!isEditing) {
     return (
       <div className="space-y-4">
-        <Card className="bg-zinc-800 text-white ring-zinc-700">
+        <Card>
           <CardHeader>
             <CardTitle>Profile Overview</CardTitle>
-            <CardDescription className="text-zinc-300">
+            <CardDescription>
               Review your account details before editing.
             </CardDescription>
           </CardHeader>
@@ -237,23 +237,23 @@ function ProfilePanel({ profile }: { profile: CandidateProfile }) {
             {success && <p className="text-sm text-emerald-300">{success}</p>}
 
             <div className="grid gap-3 md:grid-cols-2">
-              <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-3">
-                <p className="text-xs text-zinc-400">Full Name</p>
+              <div className="surface-soft p-3">
+                <p className="text-xs text-muted-foreground">Full Name</p>
                 <p className="text-sm font-medium">{profile.fullname}</p>
               </div>
 
-              <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-3">
-                <p className="text-xs text-zinc-400">Username</p>
+              <div className="surface-soft p-3">
+                <p className="text-xs text-muted-foreground">Username</p>
                 <p className="text-sm font-medium">{profile.username}</p>
               </div>
 
-              <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-3 md:col-span-2">
-                <p className="text-xs text-zinc-400">Email</p>
+              <div className="surface-soft p-3 md:col-span-2">
+                <p className="text-xs text-muted-foreground">Email</p>
                 <p className="text-sm font-medium">{profile.email}</p>
               </div>
 
-              <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-3">
-                <p className="text-xs text-zinc-400">Experience Years</p>
+              <div className="surface-soft p-3">
+                <p className="text-xs text-muted-foreground">Experience Years</p>
                 <p className="text-sm font-medium">
                   {profile.experienceYears ?? "Not set"}
                 </p>
@@ -269,10 +269,10 @@ function ProfilePanel({ profile }: { profile: CandidateProfile }) {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-zinc-800 text-white ring-zinc-700">
+      <Card>
         <CardHeader>
           <CardTitle>Edit Profile</CardTitle>
-          <CardDescription className="text-zinc-300">
+          <CardDescription>
             Update your details. Save when you are done.
           </CardDescription>
         </CardHeader>
@@ -349,7 +349,6 @@ function ProfilePanel({ profile }: { profile: CandidateProfile }) {
                 variant="outline"
                 onClick={cancelEditing}
                 disabled={updateProfileMutation.isPending}
-                className="text-black"
               >
                 Cancel
               </Button>
@@ -375,7 +374,7 @@ export default function CandidateProfilePage() {
 
   if (profileQuery.isPending) {
     return (
-      <Card className="bg-zinc-800 text-white ring-zinc-700">
+      <Card>
         <CardHeader>
           <CardTitle>Loading profile...</CardTitle>
         </CardHeader>
@@ -385,7 +384,7 @@ export default function CandidateProfilePage() {
 
   if (profileQuery.isError || !profile) {
     return (
-      <Card className="bg-zinc-800 text-white ring-zinc-700">
+      <Card>
         <CardHeader>
           <CardTitle>Could not load profile</CardTitle>
           <CardDescription className="text-red-300">{errorMessage}</CardDescription>
@@ -403,10 +402,10 @@ export default function CandidateProfilePage() {
   ].join("|");
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Profile</h1>
-        <p className="text-sm text-zinc-300">
+    <div className="page-stack">
+      <div className="section-head">
+        <h2 className="page-title">Profile</h2>
+        <p className="page-subtitle">
           View your details first, then switch to edit mode when needed.
         </p>
       </div>
