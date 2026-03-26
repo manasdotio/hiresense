@@ -9,13 +9,5 @@ export default async function Home() {
     redirect("/login");
   }
 
-  if (session.user.role === "HR") {
-    redirect("/hr/dashboard");
-  }
-
-  if (session.user.role === "CANDIDATE") {
-    redirect("/candidate/dashboard");
-  }
-
-  redirect("/login");
-}
+  redirect("/candidate/dashboard");
+}

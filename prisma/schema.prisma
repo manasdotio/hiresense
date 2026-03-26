@@ -14,16 +14,8 @@ datasource db {
 }
 
 enum Role {
-  HR
   CANDIDATE
   ADMIN
-}
-
-enum ApplicationStatus {
-  APPLIED
-  SHORTLISTED
-  INTERVIEW
-  REJECTED
 }
 
 model User {
@@ -35,48 +27,30 @@ model User {
   role      Role
   createdAt DateTime @default(now())
 
-  hrProfile        HRProfile? // one-to-one relation to HRProfile
-  candidateProfile CandidateProfile? // one-to-one relation to CandidateProfile
-}
-
-model HRProfile {
-  id     String @id @default(nanoid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id])
-
-  jobs Job[]
+  candidateProfile CandidateProfile?
 }
 
 model CandidateProfile {
-  id              String           @id @default(nanoid())
-  userId          String           @unique
-  user            User             @relation(fields: [userId], references: [id])
+  id              String   @id @default(nanoid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
   experienceYears Float?
   resumes         Resume[]
-  matches         MatchResult[]
-  applications    JobApplication[]
 }
 
 model Resume {
-  id           String           @id @default(nanoid())
-  candidateId  String
-  candidate    CandidateProfile @relation(fields: [candidateId], references: [id]) //
-  rawText      String
-  extractedAt  DateTime         @default(now())
-  resumeSkills ResumeSkill[]
-}
+  id          String           @id @default(nanoid())
+  candidateId String
+  candidate   CandidateProfile @relation(fields: [candidateId], references: [id])
+  rawText     String
+  extractedAt DateTime         @default(now())
 
-model Job {
-  id            String           @id @default(nanoid())
-  hrId          String
-  hr            HRProfile        @relation(fields: [hrId], references: [id])
-  title         String
-  description   String
-  minExperience Float?
-  createdAt     DateTime         @default(now())
-  jobSkills     JobSkill[]
-  matches       MatchResult[]
-  applications  JobApplication[]
+  atsScore        Float?
+  atsFeedback     String?
+  sectionFeedback String?   // JSON blob: { skills, experience, projects, education }
+
+  resumeSkills ResumeSkill[]
+  analyses     ResumeAnalysis[]
 }
 
 model Skill {
@@ -84,65 +58,52 @@ model Skill {
   name      String                      @unique
   embedding Unsupported("vector(768)")?
 
-  jobSkills     JobSkill[]
   resumeSkills  ResumeSkill[]
   missingSkills MissingSkill[]
-}
-
-model JobSkill {
-  id       String  @id @default(nanoid())
-  jobId    String
-  skillId  String
-  weight   Float   @default(1.0)
-  required Boolean @default(true)
-  job      Job     @relation(fields: [jobId], references: [id])
-  skill    Skill   @relation(fields: [skillId], references: [id])
-
-  @@unique([jobId, skillId])
 }
 
 model ResumeSkill {
   id         String @id @default(nanoid())
   resumeId   String
   skillId    String
-  confidence Float? // optional AI confidence score
+  confidence Float?
   resume     Resume @relation(fields: [resumeId], references: [id])
   skill      Skill  @relation(fields: [skillId], references: [id])
 
   @@unique([resumeId, skillId])
 }
 
-model MatchResult {
-  id            String           @id @default(nanoid())
-  candidateId   String
-  jobId         String
-  score         Float
-  createdAt     DateTime         @default(now())
-  candidate     CandidateProfile @relation(fields: [candidateId], references: [id])
-  job           Job              @relation(fields: [jobId], references: [id])
-  missingSkills MissingSkill[]
+model JobDescription {
+  id            String   @id @default(nanoid())
+  content       String
+  minExperience Float?
+  createdAt     DateTime @default(now())
+
+  analyses ResumeAnalysis[]
 }
 
-model JobApplication {
-  id          String            @id @default(nanoid())
-  jobId       String
-  candidateId String
-  status      ApplicationStatus @default(APPLIED)
-  note        String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+model ResumeAnalysis {
+  id               String         @id @default(nanoid())
+  resumeId         String
+  jobDescriptionId String
+  score            Float
+  suggestions      String?
+  missingKeywords  String?   // pipe-separated list
+  atsIssues        String?   // pipe-separated list
+  skillCoverage    String?   // JSON blob
+  createdAt        DateTime       @default(now())
 
-  job       Job              @relation(fields: [jobId], references: [id])
-  candidate CandidateProfile @relation(fields: [candidateId], references: [id])
-
-  @@unique([jobId, candidateId])
+  resume         Resume         @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  jobDescription JobDescription @relation(fields: [jobDescriptionId], references: [id], onDelete: Cascade)
+  missingSkills  MissingSkill[]
 }
 
 model MissingSkill {
-  id            String      @id @default(nanoid())
-  matchResultId String
-  skillId       String
-  priority      String? // High / Medium / Low
-  matchResult   MatchResult @relation(fields: [matchResultId], references: [id], onDelete: Cascade) // If a match result is deleted, its missing skills should also be deleted
-  skill         Skill       @relation(fields: [skillId], references: [id])
+  id         String         @id @default(nanoid())
+  analysisId String
+  skillId    String
+  priority   String?
+
+  analysis ResumeAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  skill    Skill          @relation(fields: [skillId], references: [id])
 }

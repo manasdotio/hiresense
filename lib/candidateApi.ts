@@ -1,71 +1,14 @@
-export type ApplicationStatus =
-  | "APPLIED"
-  | "SHORTLISTED"
-  | "INTERVIEW"
-  | "REJECTED";
-
-export type CandidateJobListItem = {
-  id: string;
-  title: string;
-  description: string;
-  minExperience: number | null;
-  createdAt: string;
-  postedBy: string;
-  requiredSkills: string[];
-  preferredSkills: string[];
-  applicationsCount: number;
-  matchesCount: number;
-  hasApplied: boolean;
-  matchPercentage: number | null;
-};
-
-export type CandidateJobSkill = {
-  id: string;
-  name: string;
-  weight: number;
-};
-
-export type CandidateJobDetailPayload = {
-  job: {
-    id: string;
-    title: string;
-    description: string;
-    minExperience: number | null;
-    createdAt: string;
-    postedBy: {
-      id: string;
-      fullname: string;
-    };
-    requiredSkills: CandidateJobSkill[];
-    preferredSkills: CandidateJobSkill[];
-    applicationsCount: number;
-    matchesCount: number;
-    hasApplied: boolean;
-    myApplicationStatus: ApplicationStatus | null;
-    matchPercentage: number | null;
-  };
-  pipeline: Record<ApplicationStatus, number> | null;
-};
-
-export type CandidateApplication = {
-  jobId: string;
-  jobTitle: string;
-  status: ApplicationStatus;
-  appliedAt: string;
-};
-
-export type ApplyToJobResponse = {
-  id: string;
-  jobTitle: string;
-  status: ApplicationStatus;
-};
+// Types kept for resume management — all job/application types removed.
 
 export type CandidateResumeItem = {
   resumeId: string;
   uploadedAt: string;
   skillsCount: number;
+  skills: string[];
   isProcessed: boolean;
   textPreview: string;
+  atsScore: number | null;
+  atsFeedback: string | null;
 };
 
 export type CandidateResumesPayload = {
@@ -95,38 +38,40 @@ export type ResumeDeleteResponse = {
   };
   deletedCounts: {
     resumeSkills: number;
-    matchResults: number;
+    analyses: number;
   };
   remainingResumes: number;
-  clearedMatches: boolean;
 };
 
-export type ResumeMatchItem = {
-  jobId: string;
-  jobTitle: string;
+export type MissingSkillResult = {
+  skillId: string;
+  skillName: string;
+  priority: string;
+};
+
+export type AnalyzeResumeResponse = {
+  analysisId: string;
   score: number;
   matchPercentage: number;
+  missingSkills: MissingSkillResult[];
+  suggestions: string | null;
+  breakdown: {
+    requiredMatched: number;
+    requiredTotal: number;
+    preferredMatched: number;
+    preferredTotal: number;
+    experienceBonus: number;
+  };
+  partialSkillIds: string[];
 };
 
-export type CandidateDashboardData = {
-  summary: {
-    totalResumes: number;
-    processedResumes: number;
-    pendingResumes: number;
-    totalJobs: number;
-    openJobs: number;
-    totalApplications: number;
-    appliedJobs: number;
-    applied: number;
-    shortlisted: number;
-    interview: number;
-    rejected: number;
-  };
-  recentApplications: CandidateApplication[];
-  latestResumes: CandidateResumeItem[];
-  openJobsPreview: CandidateJobListItem[];
-  matchingReady: boolean;
-  matchingMessage: string | null;
+export type ResumeAnalysisItem = {
+  analysisId: string;
+  score: number;
+  matchPercentage: number;
+  createdAt: string;
+  jobDescriptionPreview: string;
+  missingSkills: MissingSkillResult[];
 };
 
 export type CandidateProfile = {
@@ -135,7 +80,7 @@ export type CandidateProfile = {
   fullname: string;
   username: string;
   email: string;
-  role: "CANDIDATE";
+  role: "CANDIDATE" | "ADMIN";
   experienceYears: number | null;
   joinedAt: string;
 };
@@ -147,18 +92,7 @@ export type UpdateCandidateProfileInput = {
   experienceYears?: number | null;
 };
 
-type JobsResponse = {
-  jobs: CandidateJobListItem[];
-};
-
-type CandidateProfileResponse = {
-  profile: CandidateProfile;
-};
-
-type CandidateProfileUpdateResponse = {
-  message: string;
-  profile: CandidateProfile;
-};
+// ─── Internal Helpers ────────────────────────────────────────────────────────
 
 function getErrorMessage(payload: unknown, fallback: string): string {
   if (payload && typeof payload === "object") {
@@ -166,13 +100,11 @@ function getErrorMessage(payload: unknown, fallback: string): string {
     if (typeof maybeError === "string" && maybeError.length > 0) {
       return maybeError;
     }
-
     const maybeMessage = (payload as { message?: unknown }).message;
     if (typeof maybeMessage === "string" && maybeMessage.length > 0) {
       return maybeMessage;
     }
   }
-
   return fallback;
 }
 
@@ -197,47 +129,7 @@ async function requestJson<T>(
   return payload as T;
 }
 
-export async function getCandidateJobs(): Promise<CandidateJobListItem[]> {
-  const data = await requestJson<JobsResponse>(
-    "/api/jobs",
-    { cache: "no-store" },
-    "Failed to load jobs",
-  );
-
-  return data.jobs ?? [];
-}
-
-export async function getCandidateJobDetail(
-  jobId: string,
-): Promise<CandidateJobDetailPayload> {
-  return requestJson<CandidateJobDetailPayload>(
-    `/api/jobs/${jobId}`,
-    { cache: "no-store" },
-    "Failed to load job details",
-  );
-}
-
-export async function applyToJob(jobId: string): Promise<ApplyToJobResponse> {
-  return requestJson<ApplyToJobResponse>(
-    "/api/candidate/applications",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ jobId }),
-    },
-    "Failed to apply for this job",
-  );
-}
-
-export async function getCandidateApplications(): Promise<CandidateApplication[]> {
-  return requestJson<CandidateApplication[]>(
-    "/api/candidate/applications",
-    { cache: "no-store" },
-    "Failed to load applications",
-  );
-}
+// ─── Resume Management ───────────────────────────────────────────────────────
 
 export async function getCandidateResumes(): Promise<CandidateResumesPayload> {
   return requestJson<CandidateResumesPayload>(
@@ -253,10 +145,7 @@ export async function uploadResumeFile(file: File): Promise<ResumeUploadResponse
 
   return requestJson<ResumeUploadResponse>(
     "/api/resume/upload",
-    {
-      method: "POST",
-      body: formData,
-    },
+    { method: "POST", body: formData },
     "Failed to upload resume",
   );
 }
@@ -268,9 +157,7 @@ export async function processResumeById(
     "/api/resume/process",
     {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ resumeId }),
     },
     "Failed to process resume",
@@ -282,22 +169,42 @@ export async function deleteResumeById(
 ): Promise<ResumeDeleteResponse> {
   return requestJson<ResumeDeleteResponse>(
     `/api/resume/${resumeId}`,
-    {
-      method: "DELETE",
-    },
+    { method: "DELETE" },
     "Failed to delete resume",
   );
 }
 
-export async function getResumeMatches(
+// ─── Analysis ────────────────────────────────────────────────────────────────
+
+export async function analyzeResume(
   resumeId: string,
-): Promise<ResumeMatchItem[]> {
-  return requestJson<ResumeMatchItem[]>(
-    `/api/resume/${resumeId}/matches`,
-    { cache: "no-store" },
-    "Failed to load resume matches",
+  jobDescription: string,
+): Promise<AnalyzeResumeResponse> {
+  return requestJson<AnalyzeResumeResponse>(
+    "/api/analyze",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resumeId, jobDescription }),
+    },
+    "Failed to analyze resume",
   );
 }
+
+export async function getResumeAnalyses(
+  resumeId: string,
+): Promise<ResumeAnalysisItem[]> {
+  return requestJson<ResumeAnalysisItem[]>(
+    `/api/resume/${resumeId}/analyses`,
+    { cache: "no-store" },
+    "Failed to load analyses",
+  );
+}
+
+// ─── Profile ─────────────────────────────────────────────────────────────────
+
+type CandidateProfileResponse = { profile: CandidateProfile };
+type CandidateProfileUpdateResponse = { message: string; profile: CandidateProfile };
 
 export async function getCandidateProfile(): Promise<CandidateProfile> {
   const data = await requestJson<CandidateProfileResponse>(
@@ -305,7 +212,6 @@ export async function getCandidateProfile(): Promise<CandidateProfile> {
     { cache: "no-store" },
     "Failed to load profile",
   );
-
   return data.profile;
 }
 
@@ -316,82 +222,10 @@ export async function updateCandidateProfile(
     "/api/candidate/profile",
     {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
     },
     "Failed to update profile",
   );
-
   return data.profile;
-}
-
-export async function getCandidateDashboardData(): Promise<CandidateDashboardData> {
-  const [applications, resumesPayload] = await Promise.all([
-    getCandidateApplications(),
-    getCandidateResumes(),
-  ]);
-
-  const processedResumes = resumesPayload.resumes.filter(
-    (resume) => resume.isProcessed,
-  );
-
-  const pendingResumes = Math.max(
-    resumesPayload.summary.totalResumes - processedResumes.length,
-    0,
-  );
-
-  let jobs: CandidateJobListItem[] = [];
-  let matchingReady = true;
-  let matchingMessage: string | null = null;
-
-  try {
-    jobs = await getCandidateJobs();
-  } catch (error) {
-    matchingReady = false;
-    matchingMessage =
-      error instanceof Error
-        ? error.message
-        : "Upload and process your resume to see matched jobs.";
-  }
-
-  const statusCounts: Record<ApplicationStatus, number> = {
-    APPLIED: 0,
-    SHORTLISTED: 0,
-    INTERVIEW: 0,
-    REJECTED: 0,
-  };
-
-  for (const application of applications) {
-    statusCounts[application.status] += 1;
-  }
-
-  const sortedApplications = [...applications].sort((a, b) => {
-    return new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime();
-  });
-
-  const openJobs = jobs.filter((job) => !job.hasApplied);
-  const appliedJobs = jobs.filter((job) => job.hasApplied).length;
-
-  return {
-    summary: {
-      totalResumes: processedResumes.length,
-      processedResumes: processedResumes.length,
-      pendingResumes,
-      totalJobs: jobs.length,
-      openJobs: openJobs.length,
-      totalApplications: applications.length,
-      appliedJobs,
-      applied: statusCounts.APPLIED,
-      shortlisted: statusCounts.SHORTLISTED,
-      interview: statusCounts.INTERVIEW,
-      rejected: statusCounts.REJECTED,
-    },
-    recentApplications: sortedApplications.slice(0, 5),
-    latestResumes: processedResumes.slice(0, 3),
-    openJobsPreview: openJobs.slice(0, 5),
-    matchingReady,
-    matchingMessage,
-  };
 }

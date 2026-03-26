@@ -40,6 +40,13 @@ export async function GET() {
         id: true,
         extractedAt: true,
         rawText: true,
+        atsScore: true,
+        atsFeedback: true,
+        resumeSkills: {
+          include: {
+            skill: true,
+          },
+        },
         _count: {
           select: {
             resumeSkills: true,
@@ -52,8 +59,11 @@ export async function GET() {
       resumeId: resume.id,
       uploadedAt: resume.extractedAt,
       skillsCount: resume._count.resumeSkills,
+      skills: resume.resumeSkills.map(rs => rs.skill.name),
       isProcessed: resume._count.resumeSkills > 0,
       textPreview: buildTextPreview(resume.rawText),
+      atsScore: resume.atsScore,
+      atsFeedback: resume.atsFeedback,
     }));
 
     const processedResumes = formattedResumes.filter(
