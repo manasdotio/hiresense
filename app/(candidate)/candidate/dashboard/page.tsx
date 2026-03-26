@@ -9,245 +9,205 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getCandidateDashboardData } from "@/lib/candidateApi";
-
-function formatDate(value: string): string {
-  return new Date(value).toLocaleDateString();
-}
-
-function statusClass(status: string): string {
-  if (status === "SHORTLISTED") return "status-pill status-info";
-  if (status === "INTERVIEW") return "status-pill status-warning";
-  if (status === "REJECTED") return "status-pill status-danger";
-  return "status-pill status-success";
-}
+import { getCandidateResumes } from "@/lib/candidateApi";
+import { UploadCloud, CheckCircle2, Clock, FileText, Settings, AreaChart } from "lucide-react";
 
 export default function CandidateDashboardPage() {
-  const dashboardQuery = useQuery({
-    queryKey: ["candidate", "dashboard"],
-    queryFn: getCandidateDashboardData,
+  const resumesQuery = useQuery({
+    queryKey: ["candidate", "resumes"],
+    queryFn: getCandidateResumes,
   });
 
-  const data = dashboardQuery.data;
-  const errorMessage =
-    dashboardQuery.error instanceof Error
-      ? dashboardQuery.error.message
-      : "Failed to load dashboard";
+  const summary = resumesQuery.data?.summary;
+  const resumes = resumesQuery.data?.resumes ?? [];
+  const processedResumes = resumes.filter((r) => r.isProcessed);
+  const pendingCount = Math.max(
+    (summary?.totalResumes ?? 0) - (summary?.processedResumes ?? 0),
+    0,
+  );
 
   return (
-    <div className="page-stack">
-      <div className="section-head">
-        <h2 className="page-title">Dashboard</h2>
-        <p className="page-subtitle">
-          A quick summary of your resumes, jobs, and applications.
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Dashboard</h1>
+        <p className="mt-2 text-slate-500">
+          Your AI Resume Analyzer overview.
         </p>
       </div>
 
-      {dashboardQuery.isPending && (
-        <Card>
+      {resumesQuery.isPending && (
+        <Card className="bg-white shadow-sm border border-slate-200">
           <CardHeader>
-            <CardTitle>Loading dashboard...</CardTitle>
+            <CardTitle className="text-slate-900">Loading your data...</CardTitle>
           </CardHeader>
         </Card>
       )}
 
-      {dashboardQuery.isError && (
-        <Card>
+      {resumesQuery.isError && (
+        <Card className="bg-rose-50 shadow-sm border border-rose-200">
           <CardHeader>
-            <CardTitle>Could not load dashboard</CardTitle>
-            <CardDescription className="text-red-300">{errorMessage}</CardDescription>
+            <CardTitle className="text-rose-900">Could not load data</CardTitle>
+            <CardDescription className="text-rose-600">
+              {resumesQuery.error instanceof Error
+                ? resumesQuery.error.message
+                : "Failed to load resumes"}
+            </CardDescription>
           </CardHeader>
         </Card>
       )}
 
-      {!dashboardQuery.isPending && !dashboardQuery.isError && data && (
-        <>
-          {!data.matchingReady && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Matching Locked</CardTitle>
-                <CardDescription className="text-amber-300">
-                  {data.matchingMessage ??
-                    "Upload and process at least one resume to unlock matched jobs."}
-                </CardDescription>
-              </CardHeader>
+      {!resumesQuery.isPending && !resumesQuery.isError && (
+        <div className="space-y-8">
+          
+          {/* Main Top Stat Row */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card className="bg-white shadow-sm border-slate-200 p-6 flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-1">Total Resumes</p>
+                <p className="text-3xl font-bold font-mono text-slate-900">{summary?.totalResumes ?? 0}</p>
+              </div>
+              <div className="p-3 bg-slate-50 text-slate-400 rounded-full">
+                <FileText className="size-6" />
+              </div>
+            </Card>
+
+            <Card className="bg-white shadow-sm border-slate-200 p-6 flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-1">Processed</p>
+                <p className="text-3xl font-bold font-mono text-emerald-600">{summary?.processedResumes ?? 0}</p>
+              </div>
+              <div className="p-3 bg-emerald-50 text-emerald-500 rounded-full">
+                <CheckCircle2 className="size-6" />
+              </div>
+            </Card>
+
+            <Card className="bg-white shadow-sm border-slate-200 p-6 flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-1">Pending Sync</p>
+                <p className="text-3xl font-bold font-mono text-amber-500">{pendingCount}</p>
+              </div>
+              <div className="p-3 bg-amber-50 text-amber-500 rounded-full">
+                <Clock className="size-6" />
+              </div>
+            </Card>
+          </div>
+
+          {/* Call-to-action */}
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="md:col-span-2">
+              {processedResumes.length === 0 ? (
+                <Card className="bg-amber-50 shadow-none border border-amber-200 p-6">
+                  <div className="flex flex-col h-full justify-between gap-6">
+                    <div>
+                      <h3 className="text-lg font-semibold text-amber-900 flex items-center gap-2">
+                        <UploadCloud className="size-5" /> Let's Get Started
+                      </h3>
+                      <p className="text-sm text-amber-700 mt-2 leading-relaxed">
+                        Upload your very first resume to automatically extract your skills
+                        and measure it against thousands of real-world jobs.
+                      </p>
+                    </div>
+                    <Link
+                      href="/candidate/resume"
+                      className="inline-flex max-w-max items-center justify-center rounded-lg bg-emerald-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 transition"
+                    >
+                      Upload Resume
+                    </Link>
+                  </div>
+                </Card>
+              ) : (
+                <Card className="bg-slate-900 text-white shadow-xl shadow-slate-900/10 border-0 p-6 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-8 opacity-10">
+                    <AreaChart className="size-32" />
+                  </div>
+                  <div className="relative z-10 flex flex-col h-full justify-between gap-6">
+                    <div>
+                      <h3 className="text-xl font-semibold text-white">System Ready to Analyze</h3>
+                      <p className="text-sm text-slate-300 mt-2 max-w-sm leading-relaxed">
+                        You have {processedResumes.length} processed resume{processedResumes.length > 1 ? "s" : ""} on file. 
+                        Paste any Job Description to generate a precise ATS match breakdown instantly.
+                      </p>
+                    </div>
+                    <Link
+                      href="/candidate/resume"
+                      className="inline-flex max-w-max items-center justify-center rounded-lg bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-emerald-400 transition"
+                    >
+                      Run Analysis 
+                    </Link>
+                  </div>
+                </Card>
+              )}
+            </div>
+            
+            <div className="md:col-span-1">
+               {/* Quick links */}
+                <Card className="bg-white shadow-sm border-slate-200 h-full p-6">
+                  <h3 className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-4 border-b border-slate-100 pb-2">Quick Links</h3>
+                  <div className="space-y-3">
+                    <Link href="/candidate/resume" className="flex items-center gap-3 text-sm font-medium text-slate-700 hover:text-emerald-600 transition-colors bg-slate-50 hover:bg-emerald-50 p-3 rounded-lg border border-transparent hover:border-emerald-100">
+                      <AreaChart className="size-4" /> Run a new Match
+                    </Link>
+                    <Link href="/candidate/profile" className="flex items-center gap-3 text-sm font-medium text-slate-700 hover:text-emerald-600 transition-colors bg-slate-50 hover:bg-emerald-50 p-3 rounded-lg border border-transparent hover:border-emerald-100">
+                      <Settings className="size-4" /> Account Settings
+                    </Link>
+                  </div>
+                </Card>
+            </div>
+          </div>
+
+          {/* Recent resumes */}
+          {resumes.length > 0 && (
+            <Card className="bg-white shadow-sm border-slate-200 overflow-hidden">
+              <div className="bg-slate-50 p-6 border-b border-slate-200">
+                <CardTitle className="text-lg font-semibold text-slate-900">Recent History</CardTitle>
+                <CardDescription className="text-slate-500 mt-1">Your 3 most recently uploaded files.</CardDescription>
+              </div>
+              <div className="divide-y divide-slate-100 p-2">
+                {resumes.slice(0, 3).map((resume) => (
+                  <div
+                    key={resume.resumeId}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 hover:bg-slate-50 rounded-lg transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="mt-1">
+                        <FileText className="size-5 text-slate-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">
+                          Uploaded {new Date(resume.uploadedAt).toLocaleDateString()}
+                        </p>
+                        <div className="flex gap-4 mt-1 text-xs text-slate-500 font-medium tracking-wide">
+                          <span>
+                            {resume.isProcessed
+                              ? `${resume.skillsCount} skills detected`
+                              : "Processing pending"}
+                          </span>
+                          {typeof resume.atsScore === "number" && (
+                            <span className="text-emerald-600 flex items-center gap-1">
+                              • ATS: {resume.atsScore}/100
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                        resume.isProcessed
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          : "bg-amber-50 text-amber-700 border border-amber-200"
+                      }`}
+                    >
+                      {resume.isProcessed ? "Ready" : "Pending"}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </Card>
           )}
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Card>
-              <CardHeader>
-                <CardDescription>Usable Resumes</CardDescription>
-                <CardTitle>{data.summary.totalResumes}</CardTitle>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardDescription>Pending Resumes</CardDescription>
-                <CardTitle>{data.summary.pendingResumes}</CardTitle>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardDescription>Open Jobs</CardDescription>
-                <CardTitle>{data.summary.openJobs}</CardTitle>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardDescription>Total Applications</CardDescription>
-                <CardTitle>{data.summary.totalApplications}</CardTitle>
-              </CardHeader>
-            </Card>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Card>
-              <CardHeader>
-                <CardDescription>Applied</CardDescription>
-                <CardTitle>{data.summary.applied}</CardTitle>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardDescription>Shortlisted</CardDescription>
-                <CardTitle>{data.summary.shortlisted}</CardTitle>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardDescription>Interview</CardDescription>
-                <CardTitle>{data.summary.interview}</CardTitle>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardDescription>Rejected</CardDescription>
-                <CardTitle>{data.summary.rejected}</CardTitle>
-              </CardHeader>
-            </Card>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-3">
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <Link href="/candidate/profile" className="text-link block">
-                  Edit profile details
-                </Link>
-                <Link href="/candidate/resume" className="text-link block">
-                  Upload or process resume
-                </Link>
-                <Link href="/candidate/jobs" className="text-link block">
-                  View matched jobs
-                </Link>
-                <Link
-                  href="/candidate/applications"
-                  className="text-link block"
-                >
-                  Track my applications
-                </Link>
-              </CardContent>
-            </Card>
-
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Recent Applications</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {data.recentApplications.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">You have not applied to any jobs yet.</p>
-                ) : (
-                  data.recentApplications.map((application) => (
-                    <div
-                      key={`${application.jobId}-${application.appliedAt}`}
-                      className="surface-soft flex flex-wrap items-center justify-between gap-3 p-3"
-                    >
-                      <div>
-                        <p className="font-medium">{application.jobTitle}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Applied on {formatDate(application.appliedAt)}
-                        </p>
-                      </div>
-
-                      <span
-                        className={`rounded px-2 py-1 text-xs ${statusClass(application.status)}`}
-                      >
-                        {application.status}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Jobs You Can Apply Now</CardTitle>
-              <CardDescription>
-                Showing up to 5 matched jobs you have not applied to yet.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {!data.matchingReady ? (
-                <p className="text-sm text-muted-foreground">
-                  Upload and process at least one resume first.
-                </p>
-              ) : data.openJobsPreview.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No open jobs available right now.</p>
-              ) : (
-                data.openJobsPreview.map((job) => (
-                  <div
-                    key={job.id}
-                    className="surface-soft flex flex-wrap items-center justify-between gap-3 p-3"
-                  >
-                    <div>
-                      <p className="font-medium">{job.title}</p>
-                      <p className="text-xs text-muted-foreground">Min experience: {job.minExperience ?? 0} years</p>
-                    </div>
-
-                    <Link
-                      href={`/candidate/job/${job.id}`}
-                      className="text-link text-sm"
-                    >
-                      View Job
-                    </Link>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Latest Processed Resumes</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {data.latestResumes.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No processed resumes yet.</p>
-              ) : (
-                data.latestResumes.map((resume) => (
-                  <div
-                    key={resume.resumeId}
-                    className="surface-soft p-3"
-                  >
-                    <p className="text-sm text-foreground">Uploaded: {formatDate(resume.uploadedAt)}</p>
-                    <p className="text-xs text-muted-foreground">Skills extracted: {resume.skillsCount}</p>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </>
+        </div>
       )}
     </div>
   );

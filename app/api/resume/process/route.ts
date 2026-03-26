@@ -56,9 +56,19 @@ export async function POST(request: NextRequest) {
 
     const extracted = await extractResumeData(resume.rawText);
     const extractedSkills = Array.isArray(extracted.skills) ? extracted.skills : [];
-    const normalizedSkills = await ensureSkillsWithEmbeddings(extractedSkills, false);
+    const normalizedSkills = await ensureSkillsWithEmbeddings(extractedSkills, true);
 
     await prisma.$transaction(async (tx) => {
+      // Save atsScore, atsFeedback, and sectionFeedback to Resume
+      await tx.resume.update({
+        where: { id: resume.id },
+        data: {
+          atsScore: typeof extracted.atsScore === "number" ? extracted.atsScore : null,
+          atsFeedback: Array.isArray(extracted.atsFeedback) ? extracted.atsFeedback.join(" | ") : null,
+          sectionFeedback: extracted.sectionFeedback ? JSON.stringify(extracted.sectionFeedback) : null,
+        },
+      });
+
       // Update candidate profile with experience years if available.
       if (extracted.experienceYears !== null) {
         await tx.candidateProfile.update({

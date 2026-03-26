@@ -13,7 +13,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || session.user.role !== "CANDIDATE") {
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -48,37 +48,30 @@ export async function DELETE(
     }
 
     const deleted = await prisma.$transaction(async (tx) => {
+      // Delete resume skills
       const deletedSkills = await tx.resumeSkill.deleteMany({
+        where: { resumeId },
+      });
+
+      // ResumeAnalysis + MissingSkill are cascade-deleted via schema onDelete: Cascade
+      const deletedAnalyses = await tx.resumeAnalysis.deleteMany({
         where: { resumeId },
       });
 
       const deletedResume = await tx.resume.delete({
         where: { id: resumeId },
-        select: {
-          id: true,
-          extractedAt: true,
-        },
+        select: { id: true, extractedAt: true },
       });
 
       const remainingResumes = await tx.resume.count({
         where: { candidateId: candidate.id },
       });
 
-      let deletedMatchResults = 0;
-
-      if (remainingResumes === 0) {
-        const deletedMatches = await tx.matchResult.deleteMany({
-          where: { candidateId: candidate.id },
-        });
-
-        deletedMatchResults = deletedMatches.count;
-      }
-
       return {
         deletedSkills: deletedSkills.count,
+        deletedAnalyses: deletedAnalyses.count,
         deletedResume,
         remainingResumes,
-        deletedMatchResults,
       };
     });
 
@@ -90,10 +83,9 @@ export async function DELETE(
       },
       deletedCounts: {
         resumeSkills: deleted.deletedSkills,
-        matchResults: deleted.deletedMatchResults,
+        analyses: deleted.deletedAnalyses,
       },
       remainingResumes: deleted.remainingResumes,
-      clearedMatches: deleted.remainingResumes === 0,
     });
   } catch (error) {
     console.error("Delete Resume Error:", error);

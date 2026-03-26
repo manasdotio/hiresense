@@ -27,7 +27,7 @@ const howItWorksSteps = [
   {
     title: "Create your profile",
     description:
-      "Set up as HR or candidate in minutes with the details needed for smarter matching.",
+      "Set up in minutes with the details needed for smarter matching.",
     icon: UserRound,
   },
   {
@@ -81,20 +81,8 @@ const footerLinks = [
 export default async function Home() {
   const session = await getServerSession(authOptions);
 
-  if (session?.user.role === "HR") {
-    redirect("/hr/dashboard");
-  }
-
-  if (session?.user.role === "CANDIDATE") {
-    redirect("/candidate/dashboard");
-  }
-
-  if (session?.user.role === "ADMIN") {
-    redirect("/admin");
-  }
-
   if (session) {
-    redirect("/login");
+    redirect("/candidate/dashboard");
   }
 
   return (

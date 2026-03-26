@@ -8,14 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type RegisterRole = "HR" | "CANDIDATE";
-
 type RegisterFormData = {
   fullname: string;
   username: string;
   email: string;
   password: string;
-  role: RegisterRole;
 };
 
 const initialFormData: RegisterFormData = {
@@ -23,7 +20,6 @@ const initialFormData: RegisterFormData = {
   username: "",
   email: "",
   password: "",
-  role: "CANDIDATE",
 };
 
 type ApiErrorResponse = {
@@ -82,7 +78,7 @@ export default function RegisterPage() {
           username: formData.username.trim(),
           email: formData.email.trim(),
           password: formData.password,
-          role: formData.role,
+          role: "CANDIDATE",
         }),
       });
 
@@ -111,7 +107,7 @@ export default function RegisterPage() {
   return (
     <AuthShell
       title="Create Your Account"
-      subtitle="Register as a candidate or HR in one minute."
+      subtitle="Create your AI Match Engine profile in one minute."
       switchText="Already have an account?"
       switchHref="/login"
       switchLabel="Sign in"
@@ -163,19 +159,7 @@ export default function RegisterPage() {
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="role">Role</Label>
-          <select
-            id="role"
-            name="role"
-            value={formData.role}
-            onChange={handleInputChange}
-            className="field-select"
-          >
-            <option value="CANDIDATE">Candidate</option>
-            <option value="HR">HR</option>
-          </select>
-        </div>
+
 
         {error && <p className="text-sm text-red-300">{error}</p>}
         {success && <p className="text-sm text-emerald-300">{success}</p>}
@@ -183,13 +167,6 @@ export default function RegisterPage() {
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? "Creating account..." : "Create Account"}
         </Button>
-
-        <p className="text-center text-sm text-muted-foreground">
-          Need help choosing a role?{" "}
-          <Link href="/login" className="text-link font-medium">
-            Talk to support
-          </Link>
-        </p>
       </form>
     </AuthShell>
   );
