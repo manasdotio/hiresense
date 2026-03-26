@@ -1,22 +1,15 @@
-app/(candidate)/candidate/resume-redesign/_components/Screen2JobInput.tsx(81,13): error TS2657: JSX expressions must have one parent element.
-app/(candidate)/candidate/resume-redesign/_components/Screen2JobInput.tsx(89,48): error TS1127: Invalid character.
-app/(candidate)/candidate/resume-redesign/_components/Screen2JobInput.tsx(89,65): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
-app/(candidate)/candidate/resume-redesign/_components/Screen2JobInput.tsx(89,66): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
-app/(candidate)/candidate/resume-redesign/_components/Screen2JobInput.tsx(90,21): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
-app/(candidate)/candidate/resume-redesign/_components/Screen2JobInput.tsx(92,23): error TS17002: Expected corresponding JSX closing tag for 'div'.
-app/(candidate)/candidate/resume-redesign/_components/Screen2JobInput.tsx(93,21): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
-app/(candidate)/candidate/resume-redesign/_components/Screen2JobInput.tsx(104,48): error TS1127: Invalid character.
-app/(candidate)/candidate/resume-redesign/_components/Screen2JobInput.tsx(104,87): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
-app/(candidate)/candidate/resume-redesign/_components/Screen2JobInput.tsx(104,88): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
-app/(candidate)/candidate/resume-redesign/_components/Screen2JobInput.tsx(105,21): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
-app/(candidate)/candidate/resume-redesign/_components/Screen2JobInput.tsx(107,23): error TS17002: Expected corresponding JSX closing tag for 'div'.
-app/(candidate)/candidate/resume-redesign/_components/Screen2JobInput.tsx(108,21): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
-app/(candidate)/candidate/resume-redesign/_components/Screen2JobInput.tsx(110,15): error TS1005: ')' expected.
-app/(candidate)/candidate/resume-redesign/_components/Screen2JobInput.tsx(112,12): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
-app/(candidate)/candidate/resume-redesign/_components/Screen2JobInput.tsx(115,7): error TS1005: ')' expected.
-app/(candidate)/candidate/resume-redesign/_components/Screen2JobInput.tsx(116,5): error TS1109: Expression expected.
-app/(candidate)/candidate/resume-redesign/_components/Screen2JobInput.tsx(117,3): error TS1109: Expression expected.
-app/(candidate)/candidate/resume-redesign/_components/Screen3MatchScore.tsx(107,31): error TS1127: Invalid character.
-app/(candidate)/candidate/resume-redesign/_components/Screen3MatchScore.tsx(107,59): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
-app/(candidate)/candidate/resume-redesign/_components/Screen3MatchScore.tsx(107,60): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
-app/(candidate)/candidate/resume-redesign/_components/Screen3MatchScore.tsx(108,14): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+.next/dev/types/validator.ts(53,39): error TS2307: Cannot find module '../../../app/(admin)/admin/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(62,39): error TS2307: Cannot find module '../../../app/(admin)/admin/skills/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(71,39): error TS2307: Cannot find module '../../../app/(admin)/admin/users/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(98,39): error TS2307: Cannot find module '../../../app/(candidate)/candidate/applications/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(116,39): error TS2307: Cannot find module '../../../app/(candidate)/candidate/job/[jobId]/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(125,39): error TS2307: Cannot find module '../../../app/(candidate)/candidate/jobs/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(161,39): error TS2307: Cannot find module '../../../app/(hr)/hr/dashboard/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(170,39): error TS2307: Cannot find module '../../../app/(hr)/hr/job/[jobId]/candidates/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(179,39): error TS2307: Cannot find module '../../../app/(hr)/hr/job/[jobId]/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(188,39): error TS2307: Cannot find module '../../../app/(hr)/hr/jobs/page.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(233,39): error TS2307: Cannot find module '../../../app/api/candidate/applications/route.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(260,39): error TS2307: Cannot find module '../../../app/api/jobs/[jobId]/route.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(269,39): error TS2307: Cannot find module '../../../app/api/jobs/route.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(287,39): error TS2307: Cannot find module '../../../app/api/resume/[resumeId]/matches/route.js' or its corresponding type declarations.
+.next/dev/types/validator.ts(390,39): error TS2307: Cannot find module '../../../app/(hr)/hr/layout.js' or its corresponding type declarations.
