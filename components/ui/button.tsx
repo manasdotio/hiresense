@@ -5,20 +5,20 @@ import { Slot } from "radix-ui"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border text-sm font-semibold whitespace-nowrap transition-all duration-200 outline-none select-none focus-visible:ring-3 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center gap-2 rounded-[10px] border text-sm font-semibold whitespace-nowrap transition-all duration-200 outline-none select-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         default:
-          "border-cyan-300/30 bg-linear-to-r from-cyan-300 via-sky-300 to-emerald-300 text-slate-950 hover:brightness-110",
+          "border-primary bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm",
         outline:
-          "border-border/80 bg-card/70 text-foreground hover:border-primary/45 hover:bg-muted/45",
+          "border-black/10 bg-card text-foreground hover:border-black/15 hover:bg-muted/70 shadow-sm",
         secondary:
-          "border-border/60 bg-secondary/70 text-secondary-foreground hover:bg-secondary",
+          "border-black/8 bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost:
-          "border-transparent bg-transparent text-foreground/90 hover:bg-muted/45 hover:text-foreground",
+          "border-transparent bg-transparent text-foreground/80 hover:bg-muted hover:text-foreground",
         destructive:
-          "border-red-400/40 bg-red-500/15 text-red-200 hover:border-red-300/55 hover:bg-red-500/25 focus-visible:ring-red-400/35",
+          "border-red-200 bg-red-50 text-red-700 hover:border-red-300 hover:bg-red-100 focus-visible:ring-red-400/35",
         link: "border-transparent bg-transparent px-0 text-primary underline-offset-4 hover:underline",
       },
       size: {

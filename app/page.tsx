@@ -87,7 +87,7 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-border/70 bg-background/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-black/8 bg-white/80 backdrop-blur-xl shadow-[0_1px_0_rgba(0,0,0,0.04)]">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <Link href="/" className="group inline-flex items-center gap-2">
             <Image
@@ -116,8 +116,8 @@ export default async function Home() {
       </header>
 
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:gap-10 sm:px-6 sm:py-10 lg:gap-12 lg:px-8 lg:py-14">
-        <section className="surface-card relative overflow-hidden px-6 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-14">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(26rem_16rem_at_8%_14%,rgba(34,211,238,0.2),transparent_65%),radial-gradient(26rem_16rem_at_92%_6%,rgba(16,185,129,0.18),transparent_62%),radial-gradient(20rem_12rem_at_68%_90%,rgba(250,204,21,0.1),transparent_64%)]" />
+        <section className="surface-card relative overflow-hidden px-6 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-14 border-black/8">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(30rem_20rem_at_8%_12%,rgba(37,99,235,0.06),transparent_65%),radial-gradient(26rem_18rem_at_90%_8%,rgba(5,150,105,0.04),transparent_62%)]" />
 
           <div className="relative grid items-center gap-8 lg:grid-cols-[1.25fr_0.75fr] lg:gap-10">
             <div className="space-y-5 sm:space-y-6">
@@ -232,7 +232,7 @@ export default async function Home() {
         </section>
       </main>
 
-      <footer className="border-t border-border/70 bg-background/55 backdrop-blur-xl">
+      <footer className="border-t border-black/8 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-5 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <p className="text-muted-foreground">
             Copyright {new Date().getFullYear()} HireSense. All rights reserved.

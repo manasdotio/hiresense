@@ -35,7 +35,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <body className={`${sora.variable} ${jetbrainsMono.variable} min-h-screen`}> 
         <SessionProviderWrapper>{children}</SessionProviderWrapper>
       </body>

@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 type NavItem = {
   name: string;
   href: string;
+  icon?: React.ElementType;
 };
 
 type AppShellProps = {
@@ -37,10 +38,7 @@ export default function AppShell({
   const [menuOpen, setMenuOpen] = useState(false);
 
   function isActiveRoute(href: string): boolean {
-    if (href === pathname) {
-      return true;
-    }
-
+    if (href === pathname) return true;
     return pathname.startsWith(`${href}/`);
   }
 
@@ -49,62 +47,67 @@ export default function AppShell({
       void signOut({ callbackUrl: signOutCallbackUrl });
       return;
     }
-
     void signOut();
   }
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen bg-background">
+      {/* Mobile overlay */}
       {menuOpen && (
         <button
           aria-label="Close navigation"
-          className="fixed inset-0 z-30 bg-slate-950/65 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-30 bg-black/20 backdrop-blur-sm lg:hidden"
           onClick={() => setMenuOpen(false)}
           type="button"
         />
       )}
 
+      {/* ── Sidebar ──────────────────────────────────────────────────── */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-border/70 bg-sidebar/95 p-5 backdrop-blur-xl transition-transform duration-300 lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex w-[200px] flex-col border-r border-black/8 bg-card shadow-[1px_0_0_rgba(0,0,0,0.04)] transition-transform duration-300 lg:translate-x-0",
           menuOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Image
-                src="/hiresense-logo.svg"
-                alt="HireSense logo"
-                width={32}
-                height={32}
-                className="size-8"
-              />
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+        {/* Brand */}
+        <div className="flex items-center justify-between gap-2 border-b border-black/8 px-4 py-4">
+          <Link href="/" className="flex items-center gap-2.5 min-w-0">
+            <Image
+              src="/hiresense-logo.svg"
+              alt="HireSense logo"
+              width={28}
+              height={28}
+              className="size-7 shrink-0"
+            />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold tracking-tight text-foreground">
                 HireSense
               </p>
+              <p className="truncate text-[10px] text-muted-foreground leading-tight">
+                {subtitle}
+              </p>
             </div>
-            <h2 className="text-lg font-semibold tracking-tight text-sidebar-foreground">
-              {brand}
-            </h2>
-            <p className="text-sm text-muted-foreground">{subtitle}</p>
-          </div>
-
+          </Link>
           <Button
             aria-label="Close menu"
-            className="lg:hidden"
+            className="lg:hidden shrink-0"
             onClick={() => setMenuOpen(false)}
-            size="icon-sm"
+            size="icon-xs"
             type="button"
             variant="ghost"
           >
-            <X />
+            <X className="size-3.5" />
           </Button>
         </div>
 
-        <nav className="mt-8 space-y-1.5">
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
+          <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
+            {brand}
+          </p>
           {navItems.map((item) => {
             const active = isActiveRoute(item.href);
+            const Icon = item.icon;
 
             return (
               <Link
@@ -112,63 +115,73 @@ export default function AppShell({
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
                 className={cn(
-                  "flex items-center justify-between rounded-xl border px-3 py-2.5 text-sm font-medium transition-all",
+                  "flex items-center justify-between rounded-[10px] border px-3 py-2 text-sm font-medium transition-all",
                   active
-                    ? "border-primary/45 bg-primary/15 text-primary"
-                    : "border-transparent text-sidebar-foreground/85 hover:border-border/70 hover:bg-muted/45 hover:text-sidebar-foreground",
+                    ? "border-blue-100 bg-blue-50 text-blue-700"
+                    : "border-transparent text-foreground/75 hover:border-black/8 hover:bg-muted hover:text-foreground",
                 )}
               >
-                <span>{item.name}</span>
-                <span
-                  className={cn(
-                    "size-1.5 rounded-full bg-transparent transition-colors",
-                    active && "bg-primary",
-                  )}
-                />
+                <span className="flex items-center gap-2.5">
+                  {Icon && <Icon className="size-3.5 shrink-0" />}
+                  {item.name}
+                </span>
+                {active && (
+                  <span className="size-1.5 shrink-0 rounded-full bg-blue-600" />
+                )}
               </Link>
             );
           })}
         </nav>
 
-        <div className="mt-auto pt-6">
+        {/* Logout pinned to bottom */}
+        <div className="border-t border-black/8 px-3 py-4">
           <Button
-            className="w-full justify-start"
+            className="w-full justify-start gap-2.5 text-muted-foreground hover:text-foreground"
             onClick={handleSignOut}
             type="button"
-            variant="outline"
+            variant="ghost"
           >
             <LogOut className="size-4" />
-            Logout
+            <span>Logout</span>
           </Button>
         </div>
       </aside>
 
-      <div className="flex min-h-screen flex-col lg:pl-72">
-        <header className="sticky top-0 z-20 border-b border-border/70 bg-background/75 backdrop-blur-xl">
-          <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+      {/* ── Main area ─────────────────────────────────────────────────── */}
+      <div className="flex min-h-screen flex-col lg:pl-[200px]">
+        {/* Topbar */}
+        <header className="sticky top-0 z-20 border-b border-black/8 bg-card shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+          <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
             <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 Workspace
               </p>
-              <h1 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+              <h1 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
                 {pageTitle}
               </h1>
             </div>
 
-            <Button
-              aria-label="Open navigation"
-              className="lg:hidden"
-              onClick={() => setMenuOpen(true)}
-              size="icon-sm"
-              type="button"
-              variant="outline"
-            >
-              <Menu className="size-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* User avatar placeholder */}
+              <div className="size-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                <span className="text-xs font-bold text-primary">U</span>
+              </div>
+
+              <Button
+                aria-label="Open navigation"
+                className="lg:hidden"
+                onClick={() => setMenuOpen(true)}
+                size="icon-sm"
+                type="button"
+                variant="outline"
+              >
+                <Menu className="size-4" />
+              </Button>
+            </div>
           </div>
         </header>
 
-        <main className="flex-1">
+        <main className="flex-1 bg-background">
           <div className="page-frame">{children}</div>
         </main>
       </div>
