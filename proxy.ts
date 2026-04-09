@@ -7,11 +7,13 @@ export default withAuth(
   },
   {
     pages: {
-      signIn: "/",
+      signIn: "/login",
     },
     callbacks: {
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl;
+        const role =
+          typeof token?.role === "string" ? token.role.toUpperCase() : "";
 
         if (
           pathname === "/" ||
@@ -27,15 +29,15 @@ export default withAuth(
         }
 
         if (pathname.startsWith("/hr")) {
-          return token.role === "HR";
+          return role === "HR";
         }
 
         if (pathname.startsWith("/candidate")) {
-          return token.role === "CANDIDATE";
+          return role === "CANDIDATE";
         }
 
         if (pathname.startsWith("/admin")) {
-          return token.role === "ADMIN";
+          return role === "ADMIN";
         }
 
         return true;

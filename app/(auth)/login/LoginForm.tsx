@@ -43,7 +43,7 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/");
+    router.push("/candidate/dashboard");
     router.refresh();
   }
 

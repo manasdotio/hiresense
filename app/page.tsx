@@ -81,7 +81,7 @@ const footerLinks = [
 export default async function Home() {
   const session = await getServerSession(authOptions);
 
-  if (session) {
+  if (session?.user?.role === "CANDIDATE") {
     redirect("/candidate/dashboard");
   }
 
