@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { LogOut, Menu, X } from "lucide-react";
+import { LogOut, Menu, X, Settings } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -162,6 +162,11 @@ export default function AppShell({
             </div>
 
             <div className="flex items-center gap-2">
+              <Link href="/candidate/settings" passHref>
+                <Button size="icon-sm" variant="ghost" className="text-muted-foreground hover:text-foreground">
+                  <Settings className="size-4" />
+                </Button>
+              </Link>
               {/* User avatar placeholder */}
               <div className="size-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
                 <span className="text-xs font-bold text-primary">U</span>

@@ -134,7 +134,7 @@ export default function CandidateDashboardPage() {
                       </CardDescription>
                     </div>
                     <Link
-                      href="/candidate/resume"
+                      href="/candidate/resumes"
                       className="inline-flex max-w-max items-center justify-center gap-2 rounded-[10px] bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
                     >
                       <UploadCloud className="size-4" />
@@ -166,7 +166,7 @@ export default function CandidateDashboardPage() {
                       </CardDescription>
                     </div>
                     <Link
-                      href="/candidate/resume"
+                      href="/candidate/analyzer"
                       className="inline-flex max-w-max items-center justify-center gap-2 rounded-[10px] bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-600"
                     >
                       Run Analysis
@@ -184,7 +184,7 @@ export default function CandidateDashboardPage() {
                     Quick Links
                   </p>
                   <Link
-                    href="/candidate/resume"
+                    href="/candidate/analyzer"
                     className="flex items-center gap-3 rounded-[10px] border border-transparent bg-muted px-3 py-2.5 text-sm font-medium text-foreground transition-all hover:border-black/10 hover:bg-secondary"
                   >
                     <AreaChart className="size-4 text-primary shrink-0" />

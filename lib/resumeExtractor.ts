@@ -49,8 +49,8 @@ Rules:
 1. Ignore soft skills, personality traits, and generic words.
 2. If not mentioned return 0 for experience years.
 3. atsScore: rate the resume (0-100) based on measurable impact, keywords, and ATS best practices.
-4. atsFeedback: provide exactly 3 concise, actionable tips to improve this specific resume.
-5. sectionFeedback: for each section (skills, experience, projects, education), write 1 sentence of specific feedback on what is strong or weak. Write "Not found" if the section is missing.
+4. atsFeedback: provide exactly 3 concise, highly-specific, and actionable tips to improve this resume. Do NOT use generic ATS tips like "add keywords" or "quantify results". You MUST reference specific exact phrases or specific missing information from the provided resume text to make the feedback unique.
+5. sectionFeedback: for each section (skills, experience, projects, education), write 1 sentence of highly specific feedback citing details from the text on what is strong or weak. Write "Not found" if the section is missing.
 
 Return strictly valid JSON:
 

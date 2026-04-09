@@ -1,37 +1,21 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { LayoutDashboard, User, FileText, Search } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
 
 const navItems = [
-  { name: "Dashboard", href: "/candidate/dashboard" },
-  { name: "Profile", href: "/candidate/profile" },
-  { name: "Resume", href: "/candidate/resume" },
-  { name: "Matched Jobs", href: "/candidate/jobs" },
-  { name: "Applications", href: "/candidate/applications" },
+  { name: "Dashboard", href: "/candidate/dashboard", icon: LayoutDashboard },
+  { name: "Profile", href: "/candidate/profile", icon: User },
+  { name: "Resumes", href: "/candidate/resumes", icon: FileText },
+  { name: "Job Analyzer", href: "/candidate/analyzer", icon: Search },
 ];
 
 function getPageTitle(pathname: string): string {
-  if (pathname.startsWith("/candidate/job/")) {
-    return "Job Details";
-  }
-
-  if (pathname.startsWith("/candidate/jobs")) {
-    return "Matched Jobs";
-  }
-
-  if (pathname.startsWith("/candidate/resume")) {
-    return "Resume";
-  }
-
-  if (pathname.startsWith("/candidate/profile")) {
-    return "Profile";
-  }
-
-  if (pathname.startsWith("/candidate/applications")) {
-    return "Applications";
-  }
-
+  if (pathname.startsWith("/candidate/settings")) return "AI Settings";
+  if (pathname.startsWith("/candidate/analyzer")) return "Job Analyzer";
+  if (pathname.startsWith("/candidate/resumes")) return "My Resumes";
+  if (pathname.startsWith("/candidate/profile")) return "Profile";
   return "Dashboard";
 }
 

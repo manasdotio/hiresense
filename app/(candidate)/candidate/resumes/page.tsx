@@ -1,24 +1,26 @@
 "use client";
 
-import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { 
+  FileText, CheckCircle2, AlertCircle, 
+  UploadCloud, RefreshCcw, Briefcase, Search
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  getCandidateResumes, 
+import {
+  type CandidateResumeItem,
   deleteResumeById,
+  getCandidateResumes,
   processResumeById,
-  uploadResumeFile 
+  uploadResumeFile,
 } from "@/lib/candidateApi";
-import { FileText, CheckCircle2, Clock, Trash2, RefreshCcw, UploadCloud, Eye } from "lucide-react";
-import { useState } from "react";
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
 function formatDate(value: string): string {
   return new Date(value).toLocaleDateString(undefined, {
@@ -26,229 +28,330 @@ function formatDate(value: string): string {
   });
 }
 
+function ResumeStatusBadge({ isProcessed }: { isProcessed: boolean }) {
+  return isProcessed ? (
+    <span className="flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 border border-emerald-200">
+      <CheckCircle2 className="size-3" />
+      Analyzed
+    </span>
+  ) : (
+    <span className="flex items-center gap-1 rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 border border-amber-200">
+      <RefreshCcw className="size-3" />
+      Pending Extraction
+    </span>
+  );
+}
+
+const EMPTY_RESUMES: CandidateResumeItem[] = [];
+
+// ─── Page ─────────────────────────────────────────────────────────────────
+
 export default function ResumesPage() {
   const queryClient = useQueryClient();
+
+  // Upload / process state
   const [file, setFile] = useState<File | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [processingResumeId, setProcessingResumeId] = useState<string | null>(null);
+  const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
+
+  // ─── Data ───────────────────────────────────────────────────────────────
 
   const resumesQuery = useQuery({
     queryKey: ["candidate", "resumes"],
     queryFn: getCandidateResumes,
   });
 
-  const resumes = resumesQuery.data?.resumes ?? [];
+  const resumes = resumesQuery.data?.resumes ?? EMPTY_RESUMES;
 
-  const uploadMutation = useMutation({
+  const activeResumeId = useMemo(() => {
+    if (selectedResumeId) {
+      const r = resumes.find((r) => r.resumeId === selectedResumeId);
+      if (r) return selectedResumeId;
+    }
+    return resumes[0]?.resumeId ?? null;
+  }, [selectedResumeId, resumes]);
+
+  const activeResume = resumes.find((r) => r.resumeId === activeResumeId);
+
+  // ─── Mutations ───────────────────────────────────────────────────────────
+
+  const uploadAndProcessMutation = useMutation({
     mutationFn: async (resumeFile: File) => {
       const uploaded = await uploadResumeFile(resumeFile);
-      await processResumeById(uploaded.resumeId);
+      const processed = await processResumeById(uploaded.resumeId);
+      return { uploaded, processed };
     },
-    onSuccess: () => {
-      setUploadSuccess("Resume uploaded and processed successfully!");
-      setUploadError(null);
+    onSuccess: ({ uploaded }) => {
+      setSuccess("Your resume is processed and ready!");
+      setError(null);
+      setSelectedResumeId(uploaded.resumeId);
       setFile(null);
-      queryClient.invalidateQueries({ queryKey: ["candidate", "resumes"] });
     },
     onError: (e) => {
-      setUploadSuccess(null);
-      setUploadError(e instanceof Error ? e.message : "Upload failed");
+      setSuccess(null);
+      setError(e instanceof Error ? e.message : "Failed to upload resume");
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["candidate", "resumes"] });
     },
   });
 
   const processMutation = useMutation({
-    mutationFn: processResumeById,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["candidate", "resumes"] });
+    mutationFn: async (resumeId: string) => {
+      const processed = await processResumeById(resumeId);
+      return { resumeId, processed };
+    },
+    onMutate: (resumeId) => {
+      setProcessingResumeId(resumeId);
+      setError(null);
+      setSuccess(null);
+    },
+    onSuccess: ({ resumeId }) => {
+      setSuccess("Resume successfully re-analyzed.");
+      setSelectedResumeId(resumeId);
+    },
+    onError: (e) => {
+      setError(e instanceof Error ? e.message : "Failed to process resume");
+    },
+    onSettled: async () => {
+      setProcessingResumeId(null);
+      await queryClient.invalidateQueries({ queryKey: ["candidate", "resumes"] });
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteResumeById,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["candidate", "resumes"] });
+    mutationFn: (resumeId: string) => deleteResumeById(resumeId),
+    onMutate: (resumeId) => {
+      setError(null);
+      setSuccess(null);
+    },
+    onSuccess: (_, resumeId) => {
+      if (selectedResumeId === resumeId) setSelectedResumeId(null);
+    },
+    onError: (e) => {
+      setError(e instanceof Error ? e.message : "Failed to delete resume");
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["candidate", "resumes"] });
     },
   });
 
-  const isWorking = uploadMutation.isPending || processMutation.isPending || deleteMutation.isPending;
+  // ─── Handlers ────────────────────────────────────────────────────────────
+
+  const isUploading = uploadAndProcessMutation.isPending;
+  const isWorking = isUploading || processMutation.isPending || deleteMutation.isPending;
+  const loadError = resumesQuery.error instanceof Error ? resumesQuery.error.message : "Failed to load resumes";
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setFile(e.dataTransfer.files[0]);
+    }
+  };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 font-sans selection:bg-slate-200">
       
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">My Resumes</h1>
-          <p className="mt-2 text-slate-500">
-            Manage your uploaded documents, reprocess older resumes, and clear out history.
+      {/* ── Header Area ────────────────────────────────────────────────── */}
+      <div className="w-full bg-white border-b border-slate-200 pt-16 pb-12 mb-12">
+        <div className="max-w-5xl mx-auto px-6">
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900 flex items-center gap-3">
+            <span className="bg-slate-900 p-2 rounded-lg text-white">
+              <UploadCloud className="size-6" />
+            </span>
+            Profile Management
+          </h1>
+          <p className="mt-4 text-slate-500 text-lg max-w-2xl leading-relaxed">
+            Upload and manage your resumes to extract your core technical profile. We use this DNA to intelligently assess your fit for any role.
           </p>
         </div>
       </div>
 
-      {/* Summary Stats Row */}
-      {resumesQuery.data?.summary && (
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card className="bg-white border-slate-200 shadow-sm">
-            <CardContent className="p-6">
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1">Total Uploads</p>
-              <p className="text-3xl font-bold text-slate-900">{resumesQuery.data.summary.totalResumes}</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white border-slate-200 shadow-sm">
-            <CardContent className="p-6">
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1">Processed</p>
-              <p className="text-3xl font-bold text-emerald-600">{resumesQuery.data.summary.processedResumes}</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white border-slate-200 shadow-sm">
-            <CardContent className="p-6">
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1">Pending AI</p>
-              <p className="text-3xl font-bold text-amber-500">
-                {Math.max(resumesQuery.data.summary.totalResumes - resumesQuery.data.summary.processedResumes, 0)}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Upload New Section */}
-      <Card className="bg-white shadow-sm border border-slate-200 overflow-hidden">
-        <div className="bg-slate-50 border-b border-slate-200 p-6 flex items-center justify-between">
-          <div>
-            <CardTitle className="text-lg font-semibold text-slate-900">Upload New Resume</CardTitle>
-            <CardDescription className="text-slate-500 mt-1">Add a new PDF to your profile.</CardDescription>
+      <div className="max-w-5xl mx-auto px-6 space-y-12">
+        
+        {resumesQuery.isError && (
+          <div className="rounded-lg bg-rose-50 text-rose-700 p-4 border border-rose-200 flex items-center gap-3">
+            <AlertCircle className="size-5" />
+            <p className="font-medium text-sm">Failed to load resumes: {loadError}</p>
           </div>
-        </div>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <Input
-              type="file"
-              accept="application/pdf"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-              disabled={isWorking}
-              className="flex-1 max-w-md bg-slate-50 border-slate-200 cursor-pointer h-11"
-            />
-            <Button
-              onClick={() => {
-                if (!file) { setUploadError("Select a PDF file first"); return; }
-                setUploadError(null); setUploadSuccess(null);
-                uploadMutation.mutate(file);
-              }}
-              disabled={!file || isWorking}
-              className="bg-emerald-600 text-white hover:bg-emerald-700 h-11 px-6 font-semibold"
-            >
-              {uploadMutation.isPending ? <><RefreshCcw className="mr-2 size-4 animate-spin" /> Uploading...</> : <><UploadCloud className="mr-2 size-4" /> Upload</>}
-            </Button>
-          </div>
-          {uploadError && <p className="text-sm font-medium text-rose-500 mt-3">{uploadError}</p>}
-          {uploadSuccess && <p className="text-sm font-medium text-emerald-600 mt-3">{uploadSuccess}</p>}
-        </CardContent>
-      </Card>
+        )}
 
-      {/* Resumes Grid */}
-      {resumesQuery.isPending ? (
-        <Card className="bg-white shadow-sm border border-slate-200 p-8 text-center text-slate-500">
-          Loading your documents...
-        </Card>
-      ) : resumes.length === 0 ? (
-        <Card className="bg-slate-50 border border-slate-200 border-dashed p-12 text-center shadow-none text-slate-500">
-          <FileText className="size-12 mx-auto text-slate-300 mb-4" />
-          <p className="text-lg font-medium text-slate-900">No resumes found</p>
-          <p className="text-sm">Upload your first resume using the box above.</p>
-        </Card>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2">
-          {resumes.map((resume) => (
-            <Card key={resume.resumeId} className="bg-white shadow-sm border border-slate-200 hover:shadow-md transition-shadow flex flex-col">
-              <CardContent className="p-6 flex-1 flex flex-col gap-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-slate-50 text-slate-400 rounded-lg">
-                      <FileText className="size-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-900 line-clamp-1">{resume.textPreview.split(" ").slice(0, 5).join(" ")}...</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">Uploaded on {formatDate(resume.uploadedAt)}</p>
-                    </div>
-                  </div>
+        <div className="grid gap-8 lg:grid-cols-2">
+          
+          {/* Column 1: Upload Dropzone & History */}
+          <div className="space-y-4">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400">1. Upload Resume</h2>
+            <Card className="border-2 border-dashed border-slate-300 shadow-none bg-slate-50/50 hover:bg-slate-100 hover:border-slate-400 transition-colors p-8">
+              <CardContent className="flex flex-col items-center justify-center space-y-4 p-0" onDragOver={handleDragOver} onDrop={handleDrop}>
+                <div className="p-4 bg-white rounded-full shadow-sm border border-slate-200 text-slate-400">
+                  <FileText className="size-8" />
                 </div>
-
-                <div className="bg-slate-50 rounded-lg border border-slate-100 p-4 mt-2">
-                  <div className="flex items-center justify-between mb-3 text-sm">
-                    <span className="font-semibold text-slate-700">Analysis Status</span>
-                    {resume.isProcessed ? (
-                      <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                        <CheckCircle2 className="size-3" /> Ready
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
-                        <Clock className="size-3" /> Pending
-                      </span>
-                    )}
-                  </div>
-                  
-                  {resume.isProcessed && (
-                    <div className="flex items-center justify-between text-sm pt-3 border-t border-slate-200/60">
-                      <span className="text-slate-600">Extracted Skills</span>
-                      <span className="font-bold text-slate-900">{resume.skillsCount}</span>
-                    </div>
-                  )}
-                  {typeof resume.atsScore === "number" && (
-                    <div className="flex items-center justify-between text-sm mt-3 pt-3 border-t border-slate-200/60">
-                      <span className="text-slate-600">ATS Health Score</span>
-                      <span className="font-bold text-emerald-600">{resume.atsScore}/100</span>
-                    </div>
-                  )}
+                <div className="text-center space-y-1">
+                  <p className="text-sm font-medium text-slate-700">Drag and drop your PDF</p>
+                  <p className="text-xs text-slate-400">Max size 5MB.</p>
                 </div>
-
-                {/* Actions */}
-                <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => processMutation.mutate(resume.resumeId)}
-                      disabled={isWorking}
-                      className="h-8 px-3 text-xs bg-white text-slate-700 border-slate-300 font-medium"
-                    >
-                      {processMutation.isPending && processMutation.variables === resume.resumeId ? (
-                        <RefreshCcw className="size-3 mr-1.5 animate-spin" />
-                      ) : (
-                        <RefreshCcw className="size-3 mr-1.5" />
-                      )}
-                      {resume.isProcessed ? "Reprocess" : "Process AI"}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      asChild
-                      className="h-8 px-3 text-xs text-sky-600 hover:text-sky-700 hover:bg-sky-50 font-medium hidden sm:flex"
-                    >
-                      <Link href="/candidate/resume">
-                        <Eye className="size-3 mr-1.5" /> Use in Engine
-                      </Link>
-                    </Button>
-                  </div>
-                  
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      if (window.confirm("Delete this resume forever?")) {
-                        deleteMutation.mutate(resume.resumeId);
-                      }
-                    }}
+                
+                <div className="flex w-full items-center gap-3 mt-4">
+                  <Input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
                     disabled={isWorking}
-                    className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                    className="flex-1 bg-white cursor-pointer"
+                  />
+                  <Button
+                    onClick={() => {
+                      if (!file) { setError("Please choose a PDF file first."); return; }
+                      setError(null); setSuccess(null);
+                      uploadAndProcessMutation.mutate(file);
+                    }}
+                    disabled={!file || isWorking}
+                    className="bg-slate-900 text-white hover:bg-slate-800 shrink-0"
                   >
-                    <Trash2 className="size-4" />
+                    {isUploading ? <RefreshCcw className="size-4 animate-spin" /> : "Upload"}
                   </Button>
                 </div>
+                {error && <p className="text-sm font-medium text-rose-500 mt-2">{error}</p>}
+                {success && <p className="text-sm font-medium text-emerald-600 mt-2">{success}</p>}
               </CardContent>
             </Card>
-          ))}
+
+            {/* Resume File History */}
+            {resumes.length > 0 && (
+              <div className="pt-4 space-y-3">
+                <p className="text-xs uppercase tracking-widest text-slate-400 font-medium">Your Resumes</p>
+                <div className="flex flex-col gap-3">
+                  {resumes.map((resume) => {
+                    const isActive = activeResumeId === resume.resumeId;
+                    return (
+                      <div
+                        key={resume.resumeId}
+                        onClick={() => setSelectedResumeId(resume.resumeId)}
+                        className={`flex flex-col gap-3 rounded-xl border p-4 transition-all duration-200 ${
+                          isActive
+                            ? "border-slate-400 bg-white shadow-md ring-1 ring-slate-400"
+                            : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm cursor-pointer"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1 overflow-hidden">
+                            <div className="flex items-center gap-2">
+                              {isActive ? <CheckCircle2 className="size-4 text-emerald-500" /> : <FileText className="size-4 text-slate-400" />}
+                              <p className={`text-sm font-medium truncate ${isActive ? "text-slate-900" : "text-slate-600"}`}>
+                                {resume.textPreview.split(" ").slice(0, 4).join(" ")}...
+                              </p>
+                            </div>
+                            <p className="text-xs text-slate-400 ml-6">
+                              Uploaded {formatDate(resume.uploadedAt)}
+                            </p>
+                          </div>
+                          <ResumeStatusBadge isProcessed={resume.isProcessed} />
+                        </div>
+
+                        {/* Resume Actions Row */}
+                        <div className="flex flex-wrap gap-2 ml-6">
+                            <Button 
+                              size="sm" 
+                              variant="secondary" 
+                              className="h-8 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-3"
+                              onClick={(e) => { e.stopPropagation(); processMutation.mutate(resume.resumeId); }}
+                              disabled={isWorking}
+                            >
+                              {processingResumeId === resume.resumeId ? <RefreshCcw className="mr-2 size-3 animate-spin"/> : (resume.isProcessed ? "Re-Analyze" : "Analyze")}
+                            </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-8 text-xs text-slate-500 hover:text-rose-600 hover:bg-rose-50 px-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm("Delete this resume? This action cannot be undone."))
+                                deleteMutation.mutate(resume.resumeId);
+                            }}
+                            disabled={isWorking}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
+          </div>
+
+          {/* Column 2: Extracted Skills & Details Preview (Resume DNA) */}
+          <div className="space-y-4">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400">2. Profile DNA</h2>
+            <Card className="border-slate-200 shadow-sm bg-white">
+              {activeResume ? (
+                <CardContent className="p-6 space-y-6">
+                  <div className="flex items-center gap-4 border-b border-slate-100 pb-4">
+                    <div className="bg-emerald-50 text-emerald-600 p-2.5 rounded-xl border border-emerald-100">
+                      <Briefcase className="size-5" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-base font-semibold text-slate-900">Extracted Skills</h3>
+                      <p className="text-xs text-slate-500">{activeResume.skillsCount} detected technologies</p>
+                    </div>
+                    {typeof activeResume.atsScore === "number" && (
+                      <div className="text-right">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Base ATS Score</p>
+                        <span className="text-xl font-bold font-mono text-slate-900">{activeResume.atsScore}/100</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {activeResume.skills && activeResume.skills.length > 0 ? (
+                    <div>
+                      <div className="flex flex-wrap gap-2">
+                        {activeResume.skills.map((skill, i) => (
+                          <span key={i} className="rounded-full bg-slate-100 border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-500">No skills extracted yet. Ensure the resume is processed via AI.</p>
+                  )}
+
+                  {activeResume.atsFeedback && (
+                    <div className="pt-4 border-t border-slate-100">
+                      <h4 className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-3">Actionable Resume Feedback</h4>
+                      <ul className="space-y-2">
+                        {activeResume.atsFeedback.split(" | ").map((tip, idx) => (
+                          <li key={idx} className="flex gap-2 text-xs text-slate-600 leading-relaxed items-start">
+                            <span className="text-emerald-500 mt-0.5">•</span>
+                            <span>{tip}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </CardContent>
+              ) : (
+                <CardContent className="p-8 flex flex-col items-center justify-center text-center space-y-3 opacity-50">
+                  <Search className="size-8 text-slate-300" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-slate-900">No profile selected</p>
+                    <p className="text-xs text-slate-500">Select an uploaded resume to view its extracted details.</p>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
+          </div>
+          
         </div>
-      )}
+      </div>
     </div>
   );
 }
