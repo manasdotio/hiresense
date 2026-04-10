@@ -1,230 +1,204 @@
-# AI Resume Screening & Skill Gap Analyzer
+# HireSense
 
-## Overview
+HireSense is a candidate-focused AI resume analyzer built with Next.js App Router, Prisma, and PostgreSQL.
 
-AI Resume Screening & Skill Gap Analyzer is a web-based recruitment assistance platform that uses hybrid AI techniques to:
+It helps candidates:
+- upload and process PDF resumes,
+- extract technical skills and ATS signals,
+- compare resumes against a pasted job description,
+- see deterministic match explainability,
+- find missing skills with priority,
+- access free learning materials (docs, playlists, courses) for missing skills.
 
-- Parse resumes
-- Extract technical skills
-- Compare candidates against job descriptions
-- Generate match scores
-- Identify skill gaps
-- Provide improvement recommendations
+## Current Product Scope
 
-The system is designed as a decision-support tool for HR professionals.
+This repository currently implements the candidate workflow end to end.
 
----
+Implemented:
+- candidate registration and credentials-based login,
+- candidate profile management,
+- resume upload/process/list/delete,
+- job description analysis and analysis history,
+- per-user AI provider/model settings persistence,
+- diagnostic endpoints for LLM/model/embedding checks.
+
+Not currently implemented as product surface:
+- full HR/job posting workflow,
+- complete admin module pages.
 
 ## Tech Stack
 
-Frontend:
-- Next.js (App Router)
-- Tailwind CSS
-- TypeScript
+- Framework: Next.js 16, React 19, TypeScript
+- Styling: Tailwind CSS 4, shadcn/ui
+- Auth: NextAuth credentials + JWT session strategy
+- ORM: Prisma 7
+- Database: PostgreSQL (+ pgvector)
+- AI: OpenAI SDK with OpenAI-compatible providers
+  - Local (LM Studio)
+  - Groq
+  - OpenRouter
+- Resume text extraction: pdf-text-extract
 
-Backend:
-- Next.js API Routes
-- Prisma ORM
+## AI + Matching Design
 
-Database:
-- PostgreSQL
+Pipeline:
+1. Resume PDF upload and text extraction
+2. LLM resume extraction (skills, experience, ATS feedback)
+3. Skill canonicalization with embeddings
+4. LLM job description skill extraction
+5. Deterministic weighted scoring and enrichments
+6. Analysis persistence and history retrieval
 
-AI:
-- Local LLM (Ollama - Llama 3 / Mistral)
-- Sentence Transformers (Embeddings)
-- Cosine Similarity Matching
+Scoring characteristics:
+- Required skills weighted higher than preferred
+- Partial semantic credit for close matches
+- Experience bonus when minimum years are met
+- Additional deterministic outputs: keyword gap, skill coverage, ATS issue checks
 
-Authentication:
-- JWT-based authentication
+## Persisted AI Settings (Per User)
 
----
+When a user saves provider/model in Settings, HireSense stores it in `UserAIConfig`.
 
-## Core Features
+- Storage model: `UserAIConfig` (one-to-one with `User`)
+- Config endpoint: `/api/ai-config`
+- Used by:
+  - `/api/resume/process`
+  - `/api/analyze`
 
-### HR Role
-- Create job postings
-- Define required skills
-- View ranked candidate list
-- Analyze match scores
-- View skill gap breakdown
+This means if a user selects `groq`, it remains selected across reloads/restarts and is used for future analyses.
 
-### Candidate Role
-- Upload resume
-- View extracted skills
-- See job match percentage
-- Receive skill improvement suggestions
+## API Routes (Current)
 
-### Admin Role
-- Manage users
-- Manage skill dictionary
-- Monitor system activity
+Auth:
+- `POST /api/auth/register`
+- `GET|POST /api/auth/[...nextauth]`
 
----
+Candidate:
+- `GET /api/candidate/profile`
+- `PATCH /api/candidate/profile`
+- `GET /api/candidate/resumes`
 
-## AI Workflow
+Resume:
+- `POST /api/resume/upload`
+- `POST /api/resume/process`
+- `DELETE /api/resume/[resumeId]`
+- `GET /api/resume/[resumeId]/analyses`
 
-1. Resume Upload
-2. Resume text extraction
-3. LLM-based skill extraction
-4. Job description parsing
-5. Embedding generation
-6. Cosine similarity scoring
-7. Skill gap analysis
-8. Feedback generation
+Analysis:
+- `POST /api/analyze`
 
-The system uses LLM for structured extraction and explanation.
-Scoring is deterministic and explainable.
+AI Config:
+- `GET /api/ai-config`
+- `POST /api/ai-config`
+- `PUT /api/ai-config` (connection test)
 
----
+Diagnostics:
+- `GET /api/test`
+- `GET /api/test-llm`
+- `GET /api/test-models`
+- `GET /api/test-embedding`
+- `GET /api/test-resume-process`
 
-## Installation
+## Environment Variables
 
-### 1. Clone Repository
+Create a `.env` file with at least:
 
-git clone <repository-url>
-cd project-name
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DB"
+NEXTAUTH_SECRET="replace-with-strong-secret"
+NEXTAUTH_URL="http://localhost:3000"
 
----
+# Local OpenAI-compatible endpoint (LM Studio)
+OPENAI_BASE_URL="http://localhost:1234/v1"
+EMBEDDING_MODEL="text-embedding-nomic-embed-text-v1.5"
 
-### 2. Install Dependencies
+# Optional provider keys
+GROQ_API_KEY=""
+OPENROUTER_API_KEY=""
 
-npm install
+# Optional startup defaults (user can override in Settings)
+LLM_PROVIDER="local"
+LLM_MODEL="mistral-7b-instruct-v0.3"
+```
 
----
+## Local Setup
 
-### 3. Setup Environment Variables
-
-Create a `.env` file:
-
-DATABASE_URL="postgresql://user:password@localhost:5432/ai_hr"
-JWT_SECRET="your_secret_key"
-
----
-
-### 4. Setup Database
+1. Install dependencies
 
 ```bash
-npx prisma migrate dev --name initial-setup
+npm install
+```
+
+2. Ensure `pgvector` is available in your Postgres database
+
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+
+3. Generate Prisma client
+
+```bash
 npx prisma generate
-npm run seed
 ```
 
----
+4. Apply schema/migrations
 
-### 5. Run Development Server
+```bash
+npx prisma migrate deploy
+```
 
+5. (Optional) Seed initial skill data
+
+```bash
+npm run db:seed
+```
+
+6. Start dev server
+
+```bash
 npm run dev
-
----
-
-## Project Structure
-
-```
-/app
-  /api                      # API Routes
-    /auth                   # Authentication
-      /[...nextauth]        # NextAuth.js handlers
-      /register             # User registration
-    /jobs                   # Job management
-      /route.ts             # List/Create jobs
-      /[jobId]
-        /route.ts           # Get/Update/Delete a job
-        /candidates         # Get candidates for job
-          /[candidateId]
-            /status         # Update application status
-    /candidate              # Candidate features
-      /applications         # View/Create applications
-      /profile              # Get/Update candidate profile
-      /resumes              # List candidate resume history
-    /hr
-      /dashboard            # HR dashboard summary metrics
-    /match                  # Matching engine
-      /run                  # Run match calculation
-      /[jobId]/[candidateId]
-        /skill-gap          # Get skill gap analysis
-    /resume                 # Resume processing
-      /upload               # Upload resume
-      /process              # Process resume with AI
-      /[resumeId]           # Delete a resume
-      /[resumeId]/matches   # Get matches for resume
-    /test-*                 # Development/testing routes
-  /dashboard                # Frontend pages
-/lib                        # Shared utilities
-  auth.ts                  # Authentication config
-  prisma.ts               # Database client
-  llm.ts                  # LLM integration
-  matchingEngine.ts       # Core matching logic
-  resumeExtractor.ts      # Resume parsing
-  jobExtractor.ts         # Job parsing
-  skillStore.ts           # Skill management
-/prisma                     # Database
-  schema.prisma           # Database schema
-  /migrations             # Database migrations
-/types                      # TypeScript definitions
 ```
 
----
+## Useful Scripts
 
-## API Documentation
+- `npm run dev` - start dev server
+- `npm run build` - generate Prisma client and build app
+- `npm run lint` - run ESLint
+- `npm run db:seed` - seed database
+- `npm run skills:embed` - generate skill embeddings script
 
-### Authentication Routes
-- **POST** `/api/auth/register` - Register new user
-- **All** `/api/auth/[...nextauth]` - NextAuth.js authentication handlers
+## Repository Structure (High-Level)
 
-### Job Management
-- **GET** `/api/jobs` - List jobs (role-aware list by logged-in user) // checked
-- **POST** `/api/jobs` - Create new job posting with AI skill extraction
-- **GET** `/api/jobs/[jobId]` - Get job details (role-aware)// checked
-- **PATCH** `/api/jobs/[jobId]` - Update job title/description (re-extract skills and min experience if description changes)// checked
-- **DELETE** `/api/jobs/[jobId]` - Delete a job and related records // checked
-- **GET** `/api/jobs/[jobId]/candidates` - Get ranked candidates for a job //checked
-- **PATCH** `/api/jobs/[jobId]/candidates/[candidateId]/status` - Update application status //checked
-
-### Candidate Features
-- **GET** `/api/candidate/applications` - Get candidate's applications
-- **POST** `/api/candidate/applications` - Apply to a job (with duplicate prevention)
-- **GET** `/api/candidate/profile` - Get candidate profile
-- **PATCH** `/api/candidate/profile` - Update candidate profile
-- **GET** `/api/candidate/resumes` - Get candidate resume history
-
-### HR Dashboard
-- **GET** `/api/hr/dashboard` - Get HR dashboard KPIs, funnel, and job-level summaries
-
-### Resume Processing (Candidate Only)
-- **POST** `/api/resume/upload` - Upload PDF resume (max 5MB)
-- **POST** `/api/resume/process` - Process resume with AI skill extraction
-- **GET** `/api/resume/[resumeId]/matches` - Get job matches for resume
-- **DELETE** `/api/resume/[resumeId]` - Delete a resume (if no resumes remain, candidate match results are cleared)
-
-### Matching Engine
-- **POST** `/api/match/run` - Calculate match score between resume and job
-- **GET** `/api/match/[jobId]/[candidateId]/skill-gap` - Get skill gap analysis
-
-### Application Status Flow
-```
-APPLIED → SHORTLISTED → INTERVIEW → REJECTED
+```text
+app/
+  api/
+    analyze/
+    ai-config/
+    auth/
+    candidate/
+    resume/
+    test*/
+  (candidate)/candidate/
+    analyzer/
+    dashboard/
+    profile/
+    resumes/
+    settings/
+lib/
+  aiConfig.ts
+  userAiConfig.ts
+  llm.ts
+  resumeExtractor.ts
+  jobExtractor.ts
+  matchingEngine.ts
+  analyzeUtils.ts
+prisma/
+  schema.prisma
+  migrations/
 ```
 
-### Development/Testing Routes
-- **GET** `/api/test` - Test API connectivity
-- **GET** `/api/test-llm` - Test LLM integration
-- **GET** `/api/test-embedding` - Test embedding generation
-- **GET** `/api/test-models` - Test AI models
-- **GET** `/api/test-resume-process` - Test resume processing
+## Notes
 
----
-
-## Future Enhancements
-
-- Skill demand forecasting
-- Advanced ranking algorithm
-- Bias detection module
-- Resume auto-improvement assistant
-- Batch resume processing
-
----
-
-## Disclaimer
-
-This system is intended as a recruitment assistance tool.
-It does not replace human hiring decisions.
+- Resume processing and analysis are request-driven (no background queue yet).
+- Browser extensions that mutate DOM can trigger hydration warnings in development.
+- If you hit `.next` `EPERM` rename errors on Windows, ensure only one `next dev` process is running and clear `.next` before restart.
