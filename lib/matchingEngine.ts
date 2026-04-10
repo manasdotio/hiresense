@@ -44,6 +44,12 @@ export interface MatchResult {
     requiredTotal: number;
     preferredMatched: number;
     preferredTotal: number;
+    requiredWeightEarned: number;
+    requiredWeightTotal: number;
+    preferredWeightEarned: number;
+    preferredWeightTotal: number;
+    rawScore: number;
+    totalWeight: number;
     experienceBonus: number;
   };
 }
@@ -62,6 +68,12 @@ export function computeMatchFromSkills(input: MatchInput): MatchResult {
         requiredTotal: 0,
         preferredMatched: 0,
         preferredTotal: 0,
+        requiredWeightEarned: 0,
+        requiredWeightTotal: 0,
+        preferredWeightEarned: 0,
+        preferredWeightTotal: 0,
+        rawScore: 0,
+        totalWeight: 0,
         experienceBonus: 0,
       },
     };
@@ -79,19 +91,33 @@ export function computeMatchFromSkills(input: MatchInput): MatchResult {
   let requiredTotal = 0;
   let preferredMatched = 0;
   let preferredTotal = 0;
+  let requiredWeightEarned = 0;
+  let requiredWeightTotal = 0;
+  let preferredWeightEarned = 0;
+  let preferredWeightTotal = 0;
 
   for (const skill of jdSkills) {
     const weight = skill.tier === "required" ? REQUIRED_WEIGHT : PREFERRED_WEIGHT;
     totalWeight += weight;
 
-    if (skill.tier === "required") requiredTotal++;
-    else preferredTotal++;
+    if (skill.tier === "required") {
+      requiredTotal++;
+      requiredWeightTotal += weight;
+    } else {
+      preferredTotal++;
+      preferredWeightTotal += weight;
+    }
 
     if (resumeSet.has(skill.id)) {
       // Exact match
       earnedWeight += weight;
-      if (skill.tier === "required") requiredMatched++;
-      else preferredMatched++;
+      if (skill.tier === "required") {
+        requiredMatched++;
+        requiredWeightEarned += weight;
+      } else {
+        preferredMatched++;
+        preferredWeightEarned += weight;
+      }
       continue;
     }
 
@@ -102,6 +128,12 @@ export function computeMatchFromSkills(input: MatchInput): MatchResult {
       const credit = ((sim - PARTIAL_CREDIT_THRESHOLD) / (1 - PARTIAL_CREDIT_THRESHOLD)) * weight;
       earnedWeight += credit;
       partialSkillIds.push(skill.id);
+
+      if (skill.tier === "required") {
+        requiredWeightEarned += credit;
+      } else {
+        preferredWeightEarned += credit;
+      }
 
       if (credit / weight > 0.5) {
         if (skill.tier === "required") requiredMatched++;
@@ -133,6 +165,12 @@ export function computeMatchFromSkills(input: MatchInput): MatchResult {
       requiredTotal,
       preferredMatched,
       preferredTotal,
+      requiredWeightEarned,
+      requiredWeightTotal,
+      preferredWeightEarned,
+      preferredWeightTotal,
+      rawScore,
+      totalWeight,
       experienceBonus,
     },
   };

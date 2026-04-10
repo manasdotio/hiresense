@@ -3,12 +3,14 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import {
   getAIConfig,
-  setAIConfig,
+  LLM_PROVIDERS,
   DEFAULT_MODELS,
   PROVIDER_MODELS,
   PROVIDER_LABELS,
+  isValidLLMProvider,
   type LLMProvider,
 } from "@/lib/aiConfig";
+import { getUserAIConfig, saveUserAIConfig } from "@/lib/userAiConfig";
 import { testLLMConnection } from "@/lib/llm";
 
 /** GET /api/ai-config — returns current config + available options */
@@ -18,12 +20,18 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const config = getAIConfig();
+  const runtimeConfig = getAIConfig();
+  const userConfig = await getUserAIConfig(session.user.id);
+  const config = {
+    provider: userConfig.provider,
+    model: userConfig.model,
+    embeddingModel: runtimeConfig.embeddingModel,
+  };
 
   return NextResponse.json({
     config,
     options: {
-      providers: (["local", "groq", "openrouter"] as LLMProvider[]).map((p) => ({
+      providers: LLM_PROVIDERS.map((p) => ({
         id: p,
         label: PROVIDER_LABELS[p],
         defaultModel: DEFAULT_MODELS[p],
@@ -48,26 +56,34 @@ export async function POST(request: NextRequest) {
     test?: boolean;
   };
 
-  const validProviders: LLMProvider[] = ["local", "groq", "openrouter"];
-  const provider = validProviders.includes(body.provider as LLMProvider)
-    ? (body.provider as LLMProvider)
-    : undefined;
+  const current = await getUserAIConfig(session.user.id);
 
-  const model = typeof body.model === "string" && body.model.trim()
-    ? body.model.trim()
-    : undefined;
+  const provider: LLMProvider =
+    typeof body.provider === "string" && isValidLLMProvider(body.provider)
+      ? body.provider
+      : current.provider;
 
-  // Update runtime config
-  setAIConfig({ provider, model });
+  const requestedModel =
+    typeof body.model === "string" && body.model.trim().length > 0
+      ? body.model.trim()
+      : "";
+
+  const model = requestedModel ||
+    (provider !== current.provider ? DEFAULT_MODELS[provider] : current.model);
+
+  const saved = await saveUserAIConfig(session.user.id, { provider, model });
+  const config = {
+    ...saved,
+    embeddingModel: getAIConfig().embeddingModel,
+  };
 
   // If test flag set, also run a connection test
   if (body.test) {
-    const config = getAIConfig();
     const result = await testLLMConnection(config.provider, config.model);
-    return NextResponse.json({ config: getAIConfig(), test: result });
+    return NextResponse.json({ config, test: result });
   }
 
-  return NextResponse.json({ config: getAIConfig() });
+  return NextResponse.json({ config });
 }
 
 /** POST /api/ai-config/test — dedicated test endpoint */
@@ -78,14 +94,16 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = (await request.json()) as { provider?: string; model?: string };
-  const validProviders: LLMProvider[] = ["local", "groq", "openrouter"];
-  const provider = validProviders.includes(body.provider as LLMProvider)
-    ? (body.provider as LLMProvider)
-    : getAIConfig().provider;
+  const current = await getUserAIConfig(session.user.id);
+
+  const provider =
+    typeof body.provider === "string" && isValidLLMProvider(body.provider)
+      ? body.provider
+      : current.provider;
 
   const model = typeof body.model === "string" && body.model.trim()
     ? body.model.trim()
-    : getAIConfig().model;
+    : current.model;
 
   const result = await testLLMConnection(provider, model);
   return NextResponse.json(result);

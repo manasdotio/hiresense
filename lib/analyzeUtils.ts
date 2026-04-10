@@ -218,3 +218,270 @@ export function computeImprovementTrend(
     improvement: Math.round((currentScore - previousScore) * 100),
   };
 }
+
+// ─── 6. Score Explainability ────────────────────────────────────────────────
+export type ScoreExplainabilityComponent = {
+  key: "required" | "preferred" | "experience";
+  label: string;
+  coveragePct: number;
+  contributionPct: number;
+  detail: string;
+};
+
+export type ScoreExplainability = {
+  finalScorePct: number;
+  scoreBand: "strong" | "moderate" | "low";
+  components: ScoreExplainabilityComponent[];
+  highlights: string[];
+};
+
+export function buildScoreExplainability(params: {
+  score: number;
+  keywordMatchPct: number;
+  missingHighCount: number;
+  missingMediumCount: number;
+  breakdown: {
+    requiredWeightEarned: number;
+    requiredWeightTotal: number;
+    preferredWeightEarned: number;
+    preferredWeightTotal: number;
+    rawScore: number;
+    totalWeight: number;
+    experienceBonus: number;
+  };
+}): ScoreExplainability {
+  const {
+    score,
+    keywordMatchPct,
+    missingHighCount,
+    missingMediumCount,
+    breakdown,
+  } = params;
+
+  const finalScorePct = Math.round(score * 100);
+  const scoreBand = finalScorePct >= 75 ? "strong" : finalScorePct >= 50 ? "moderate" : "low";
+
+  const requiredCoveragePct =
+    breakdown.requiredWeightTotal > 0
+      ? Math.round((breakdown.requiredWeightEarned / breakdown.requiredWeightTotal) * 100)
+      : 0;
+
+  const preferredCoveragePct =
+    breakdown.preferredWeightTotal > 0
+      ? Math.round((breakdown.preferredWeightEarned / breakdown.preferredWeightTotal) * 100)
+      : 0;
+
+  const requiredContributionPct =
+    breakdown.totalWeight > 0
+      ? Math.round((breakdown.requiredWeightEarned / breakdown.totalWeight) * 100)
+      : 0;
+
+  const preferredContributionPct =
+    breakdown.totalWeight > 0
+      ? Math.round((breakdown.preferredWeightEarned / breakdown.totalWeight) * 100)
+      : 0;
+
+  // Experience contribution is capped if score hits 100.
+  const effectiveExperience = Math.max(0, Math.min(score - breakdown.rawScore, breakdown.experienceBonus));
+  const experienceContributionPct = Math.round(effectiveExperience * 100);
+
+  const highlights: string[] = [];
+  if (missingHighCount > 0) {
+    highlights.push(`${missingHighCount} required skill(s) are currently dragging your score down the most.`);
+  }
+  if (missingMediumCount > 0) {
+    highlights.push(`${missingMediumCount} preferred skill(s) are still available as easier score boosters.`);
+  }
+  if (keywordMatchPct < 60) {
+    highlights.push(`Keyword overlap is ${keywordMatchPct}% - improving wording alignment can lift screening outcomes.`);
+  }
+  if (experienceContributionPct > 0) {
+    highlights.push(`Experience contributed +${experienceContributionPct}% to your final score.`);
+  }
+  if (highlights.length === 0) {
+    highlights.push("Your score is balanced with no obvious penalty drivers from required/preferred coverage.");
+  }
+
+  return {
+    finalScorePct,
+    scoreBand,
+    components: [
+      {
+        key: "required",
+        label: "Required Skills",
+        coveragePct: requiredCoveragePct,
+        contributionPct: requiredContributionPct,
+        detail: "Highest-weight section. Missing required skills have the largest impact.",
+      },
+      {
+        key: "preferred",
+        label: "Preferred Skills",
+        coveragePct: preferredCoveragePct,
+        contributionPct: preferredContributionPct,
+        detail: "Nice-to-have section. Gains here can improve ranking among similar candidates.",
+      },
+      {
+        key: "experience",
+        label: "Experience Bonus",
+        coveragePct: breakdown.experienceBonus > 0 ? 100 : 0,
+        contributionPct: experienceContributionPct,
+        detail: "Applied when your years of experience meet or exceed the JD minimum.",
+      },
+    ],
+    highlights,
+  };
+}
+
+// ─── 7. Skill Learning Materials ────────────────────────────────────────────
+export type LearningMaterialResource = {
+  title: string;
+  provider: string;
+  type: "playlist" | "course" | "docs" | "guide";
+  url: string;
+};
+
+export type SkillLearningMaterial = {
+  skillId: string;
+  skillName: string;
+  priority: string;
+  resources: LearningMaterialResource[];
+};
+
+type ResourceCatalogEntry = {
+  keywords: string[];
+  resource: LearningMaterialResource;
+};
+
+const DOC_RESOURCE_CATALOG: ResourceCatalogEntry[] = [
+  { keywords: ["react"], resource: { title: "React Docs", provider: "react.dev", type: "docs", url: "https://react.dev/learn" } },
+  { keywords: ["next.js", "nextjs"], resource: { title: "Next.js Learn", provider: "nextjs.org", type: "docs", url: "https://nextjs.org/learn" } },
+  { keywords: ["typescript"], resource: { title: "TypeScript Handbook", provider: "typescriptlang.org", type: "docs", url: "https://www.typescriptlang.org/docs/" } },
+  { keywords: ["javascript"], resource: { title: "MDN JavaScript Guide", provider: "MDN", type: "docs", url: "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide" } },
+  { keywords: ["node.js", "nodejs"], resource: { title: "Node.js Learn", provider: "nodejs.org", type: "docs", url: "https://nodejs.org/en/learn/getting-started/introduction-to-nodejs" } },
+  { keywords: ["express"], resource: { title: "Express Guide", provider: "expressjs.com", type: "docs", url: "https://expressjs.com/en/starter/installing.html" } },
+  { keywords: ["python"], resource: { title: "Python Tutorial", provider: "python.org", type: "docs", url: "https://docs.python.org/3/tutorial/" } },
+  { keywords: ["java"], resource: { title: "Java Learn", provider: "dev.java", type: "docs", url: "https://dev.java/learn/" } },
+  { keywords: ["c#", ".net", "dotnet"], resource: { title: ".NET Learning Path", provider: "Microsoft Learn", type: "docs", url: "https://learn.microsoft.com/en-us/dotnet/" } },
+  { keywords: ["sql"], resource: { title: "SQLBolt", provider: "sqlbolt.com", type: "course", url: "https://sqlbolt.com/" } },
+  { keywords: ["postgres", "postgresql"], resource: { title: "PostgreSQL Tutorial", provider: "postgresql.org", type: "docs", url: "https://www.postgresql.org/docs/current/tutorial.html" } },
+  { keywords: ["mysql"], resource: { title: "MySQL Tutorial", provider: "mysql.com", type: "docs", url: "https://dev.mysql.com/doc/refman/8.0/en/tutorial.html" } },
+  { keywords: ["mongodb"], resource: { title: "MongoDB University", provider: "MongoDB", type: "course", url: "https://learn.mongodb.com/" } },
+  { keywords: ["docker"], resource: { title: "Docker Get Started", provider: "docs.docker.com", type: "docs", url: "https://docs.docker.com/get-started/" } },
+  { keywords: ["kubernetes", "k8s"], resource: { title: "Kubernetes Basics", provider: "kubernetes.io", type: "docs", url: "https://kubernetes.io/docs/tutorials/kubernetes-basics/" } },
+  { keywords: ["aws"], resource: { title: "AWS Skill Builder", provider: "AWS", type: "course", url: "https://skillbuilder.aws/" } },
+  { keywords: ["azure"], resource: { title: "Azure Training", provider: "Microsoft Learn", type: "course", url: "https://learn.microsoft.com/en-us/training/azure/" } },
+  { keywords: ["gcp", "google cloud"], resource: { title: "Google Cloud Skills Boost", provider: "Google", type: "course", url: "https://www.cloudskillsboost.google/" } },
+  { keywords: ["prisma"], resource: { title: "Prisma Docs", provider: "prisma.io", type: "docs", url: "https://www.prisma.io/docs/getting-started" } },
+  { keywords: ["graphql"], resource: { title: "HowToGraphQL", provider: "HowToGraphQL", type: "course", url: "https://www.howtographql.com/" } },
+];
+
+const GUIDE_RESOURCE_CATALOG: ResourceCatalogEntry[] = [
+  { keywords: ["react", "javascript", "typescript", "next.js", "nextjs"], resource: { title: "Frontend Roadmap", provider: "roadmap.sh", type: "guide", url: "https://roadmap.sh/frontend" } },
+  { keywords: ["node.js", "nodejs", "express", "django", "flask", "fastapi", "spring", "rails", "graphql"], resource: { title: "Backend Roadmap", provider: "roadmap.sh", type: "guide", url: "https://roadmap.sh/backend" } },
+  { keywords: ["docker", "kubernetes", "terraform", "aws", "azure", "gcp", "linux", "ci/cd"], resource: { title: "DevOps Roadmap", provider: "roadmap.sh", type: "guide", url: "https://roadmap.sh/devops" } },
+  { keywords: ["sql", "postgres", "postgresql", "mysql", "mongodb", "redis"], resource: { title: "SQL Roadmap", provider: "roadmap.sh", type: "guide", url: "https://roadmap.sh/sql" } },
+];
+
+function normalizeSkillName(skillName: string): string {
+  return skillName.toLowerCase().replace(/[^a-z0-9+#.\s-]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function getPriorityRank(priority: string): number {
+  if (priority === "HIGH") return 0;
+  if (priority === "MEDIUM") return 1;
+  return 2;
+}
+
+function findCatalogResource(
+  skillName: string,
+  catalog: ResourceCatalogEntry[]
+): LearningMaterialResource | undefined {
+  const normalized = normalizeSkillName(skillName);
+  return catalog.find((entry) =>
+    entry.keywords.some((keyword) => normalized.includes(keyword) || keyword.includes(normalized))
+  )?.resource;
+}
+
+function dedupeResources(resources: LearningMaterialResource[]): LearningMaterialResource[] {
+  const seen = new Set<string>();
+  const unique: LearningMaterialResource[] = [];
+
+  for (const resource of resources) {
+    if (seen.has(resource.url)) continue;
+    seen.add(resource.url);
+    unique.push(resource);
+  }
+
+  return unique;
+}
+
+export function buildSkillLearningMaterials(params: {
+  missingSkills: Array<{ skillId: string; skillName: string; priority: string }>;
+  maxSkills?: number;
+  maxResourcesPerSkill?: number;
+}): SkillLearningMaterial[] {
+  const { missingSkills, maxSkills = 8, maxResourcesPerSkill = 4 } = params;
+
+  const seenSkills = new Set<string>();
+  const uniqueSortedSkills = missingSkills
+    .filter((skill) => {
+      const normalized = normalizeSkillName(skill.skillName);
+      if (!normalized || seenSkills.has(normalized)) return false;
+      seenSkills.add(normalized);
+      return true;
+    })
+    .sort((a, b) => {
+      const rankDiff = getPriorityRank(a.priority) - getPriorityRank(b.priority);
+      if (rankDiff !== 0) return rankDiff;
+      return a.skillName.localeCompare(b.skillName);
+    })
+    .slice(0, maxSkills);
+
+  return uniqueSortedSkills.map((skill) => {
+    const docsResource =
+      findCatalogResource(skill.skillName, DOC_RESOURCE_CATALOG) ??
+      {
+        title: `${skill.skillName} Official Docs`,
+        provider: "Web Search",
+        type: "docs" as const,
+        url: `https://duckduckgo.com/?q=${encodeURIComponent(`${skill.skillName} official documentation`)}`,
+      };
+
+    const guideResource =
+      findCatalogResource(skill.skillName, GUIDE_RESOURCE_CATALOG) ??
+      {
+        title: `${skill.skillName} Learning Path`,
+        provider: "roadmap.sh",
+        type: "guide" as const,
+        url: "https://roadmap.sh",
+      };
+
+    const youtubeResource: LearningMaterialResource = {
+      title: `${skill.skillName} YouTube Playlists`,
+      provider: "YouTube",
+      type: "playlist",
+      url: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${skill.skillName} full course playlist`)}`,
+    };
+
+    const freeCourseResource: LearningMaterialResource = {
+      title: `${skill.skillName} Free Course Search`,
+      provider: "Class Central",
+      type: "course",
+      url: `https://www.classcentral.com/search?q=${encodeURIComponent(skill.skillName)}`,
+    };
+
+    const resources = dedupeResources([
+      docsResource,
+      guideResource,
+      youtubeResource,
+      freeCourseResource,
+    ]).slice(0, maxResourcesPerSkill);
+
+    return {
+      skillId: skill.skillId,
+      skillName: skill.skillName,
+      priority: skill.priority,
+      resources,
+    };
+  });
+}

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { 
   CheckCircle2, AlertCircle, ChevronRight, 
-  ArrowRight, RefreshCcw, Minus, XCircle, Search
+  ArrowRight, RefreshCcw, Minus, XCircle, Search, BarChart3, BookOpen, ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -77,12 +77,29 @@ function PriorityBadge({ priority }: { priority: string }) {
   );
 }
 
+function ScoreBandBadge({ band }: { band: "strong" | "moderate" | "low" }) {
+  const styleMap: Record<"strong" | "moderate" | "low", string> = {
+    strong: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    moderate: "bg-amber-50 text-amber-700 border-amber-200",
+    low: "bg-rose-50 text-rose-700 border-rose-200",
+  };
+
+  return (
+    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-widest ${styleMap[band]}`}>
+      {band} fit
+    </span>
+  );
+}
+
 export default function AnalyzerPage() {
   // Analyze state
   const [jdText, setJdText] = useState("");
   const [analysisResult, setAnalysisResult] = useState<AnalyzeResumeResponse | null>(null);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [selectedResumeId, setSelectedResumeId] = useState<string>("");
+  const learningMaterials = Array.isArray(analysisResult?.learningMaterials)
+    ? analysisResult.learningMaterials
+    : [];
 
   // ─── Data ───────────────────────────────────────────────────────────────
 
@@ -176,7 +193,7 @@ export default function AnalyzerPage() {
                   value={jdText}
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setJdText(e.target.value)}
                   disabled={analyzeMutation.isPending}
-                  className="border-0 ring-0 focus-visible:ring-0 rounded-b-none text-slate-900 placeholder:text-slate-400 text-sm leading-relaxed p-6 min-h-[260px] resize-y"
+                  className="border-0 ring-0 focus-visible:ring-0 rounded-b-none text-slate-900 placeholder:text-slate-400 text-sm leading-relaxed p-6 min-h-65 resize-y"
                 />
                 
                 <div className="bg-slate-50 border-t border-slate-100 p-4 flex items-center justify-between gap-4 rounded-b-xl">
@@ -249,6 +266,69 @@ export default function AnalyzerPage() {
             )}
 
             <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
+              <div className="bg-slate-50 border-b border-slate-200 p-6 flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                    <BarChart3 className="size-5 text-slate-500" />
+                    Score Explainability
+                  </CardTitle>
+                  <CardDescription className="text-slate-500 mt-1">
+                    Transparent contribution view for required skills, preferred skills, and experience bonus.
+                  </CardDescription>
+                </div>
+                <ScoreBandBadge band={analysisResult.scoreExplainability.scoreBand} />
+              </div>
+
+              <CardContent className="p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {analysisResult.scoreExplainability.components.map((component) => {
+                    const barClass =
+                      component.key === "required"
+                        ? "bg-slate-900"
+                        : component.key === "preferred"
+                          ? "bg-slate-500"
+                          : "bg-emerald-500";
+
+                    return (
+                      <div key={component.key} className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                            {component.label}
+                          </p>
+                          <span className="text-xs font-bold text-slate-700">+{component.contributionPct}%</span>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-700 ${barClass}`}
+                              style={{ width: `${Math.max(0, Math.min(component.coveragePct, 100))}%` }}
+                            />
+                          </div>
+                          <p className="text-[11px] text-slate-500">Coverage: {component.coveragePct}%</p>
+                        </div>
+
+                        <p className="text-xs text-slate-600 leading-relaxed">{component.detail}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">Primary Score Drivers</p>
+                  <ul className="space-y-2">
+                    {analysisResult.scoreExplainability.highlights.map((highlight, idx) => (
+                      <li key={`${highlight}-${idx}`} className="flex gap-2 text-sm text-slate-700 leading-relaxed">
+                        <ChevronRight className="size-4 shrink-0 text-slate-400 mt-0.5" />
+                        <span>{highlight}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
               <div className="bg-slate-50 border-b border-slate-200 p-6">
                 <CardTitle className="text-lg font-semibold text-slate-900">Skill Gap Breakdown</CardTitle>
                 <CardDescription className="text-slate-500">
@@ -272,8 +352,8 @@ export default function AnalyzerPage() {
                             <p className="text-sm font-medium text-slate-900 leading-tight pr-2">{ms.skillName}</p>
                             <PriorityBadge priority={ms.priority} />
                           </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5 min-h-[16px]">
+                          <div className="flex items-center">
+                            <div className="flex items-center gap-1.5 min-h-4">
                               {isPartial ? (
                                 <>
                                   <Minus className="size-3.5 text-amber-500" />
@@ -286,14 +366,6 @@ export default function AnalyzerPage() {
                                 </>
                               )}
                             </div>
-                            <a 
-                              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(ms.skillName + " tutorial full course")}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded transition-colors"
-                            >
-                              Learn →
-                            </a>
                           </div>
                         </div>
                       );
@@ -328,6 +400,61 @@ export default function AnalyzerPage() {
                 </CardContent>
               </Card>
             )}
+
+            <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
+              <div className="bg-slate-50 border-b border-slate-200 p-6">
+                <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                  <BookOpen className="size-5 text-slate-500" />
+                  Free Learning Materials
+                </CardTitle>
+                <CardDescription className="text-slate-500 mt-1">
+                  Best free resources for your missing skills from official docs, YouTube playlists, and trusted learning hubs.
+                </CardDescription>
+              </div>
+
+              <CardContent className="p-6 space-y-5">
+                {learningMaterials.length > 0 ? (
+                  <div className="space-y-4">
+                    {learningMaterials.map((skillMaterial) => (
+                      <div key={skillMaterial.skillId} className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <h4 className="text-sm font-semibold text-slate-900">{skillMaterial.skillName}</h4>
+                          <PriorityBadge priority={skillMaterial.priority} />
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {skillMaterial.resources.map((resource, index) => (
+                            <a
+                              key={`${skillMaterial.skillId}-${resource.url}-${index}`}
+                              href={resource.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="rounded-lg border border-slate-200 bg-white p-3 hover:border-emerald-300 hover:bg-emerald-50/40 transition-colors"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <p className="text-sm font-medium text-slate-800 leading-snug">{resource.title}</p>
+                                <ExternalLink className="size-4 text-slate-400 shrink-0" />
+                              </div>
+                              <p className="mt-2 text-[11px] uppercase tracking-widest text-slate-500">
+                                {resource.provider} • {resource.type}
+                              </p>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-8 flex flex-col items-center justify-center text-center space-y-3">
+                    <div className="bg-emerald-100 p-3 rounded-full text-emerald-600">
+                      <CheckCircle2 className="size-8" />
+                    </div>
+                    <p className="text-lg font-semibold text-slate-900">No Extra Learning Needed</p>
+                    <p className="text-sm text-slate-500">No missing skills detected for this job description, so there are no learning links to show.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
             
           </div>
         )}

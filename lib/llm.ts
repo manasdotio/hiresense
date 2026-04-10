@@ -1,5 +1,12 @@
 import OpenAI from "openai";
-import { getAIConfig, type LLMProvider } from "./aiConfig";
+import {
+  DEFAULT_MODELS,
+  getAIConfig,
+  type AIConfig,
+  type LLMProvider,
+} from "./aiConfig";
+
+export type LLMCallConfig = Pick<AIConfig, "provider" | "model">;
 
 /* ---------- Provider Client Factory ---------- */
 
@@ -41,8 +48,28 @@ const embeddingClient = new OpenAI({
 
 /* ---------- LLM Call ---------- */
 
-export async function callLLM(prompt: string) {
-  const config = getAIConfig();
+function resolveLLMCallConfig(overrides?: Partial<LLMCallConfig>): LLMCallConfig {
+  const runtimeConfig = getAIConfig();
+  const provider = overrides?.provider ?? runtimeConfig.provider;
+
+  const fallbackModel =
+    provider === runtimeConfig.provider
+      ? runtimeConfig.model
+      : DEFAULT_MODELS[provider];
+
+  const requestedModel =
+    typeof overrides?.model === "string" && overrides.model.trim().length > 0
+      ? overrides.model.trim()
+      : fallbackModel;
+
+  return {
+    provider,
+    model: requestedModel || DEFAULT_MODELS[provider],
+  };
+}
+
+export async function callLLM(prompt: string, overrides?: Partial<LLMCallConfig>) {
+  const config = resolveLLMCallConfig(overrides);
   const client = createClient(config.provider);
   const model = config.model;
 

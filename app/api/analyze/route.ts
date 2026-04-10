@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { extractJobSkills } from "@/lib/jobExtractor";
 import { ensureSkillsWithEmbeddings } from "@/lib/skillStore";
+import { getUserAIConfig } from "@/lib/userAiConfig";
 import { computeMatchFromSkills, JdSkill, MatchInput, MatchResult } from "@/lib/matchingEngine";
 import {
   computeKeywordGap,
@@ -11,6 +12,8 @@ import {
   computeAtsIssues,
   generateRuleBasedSuggestions,
   computeImprovementTrend,
+  buildScoreExplainability,
+  buildSkillLearningMaterials,
 } from "@/lib/analyzeUtils";
 
 export const runtime = "nodejs";
@@ -65,10 +68,12 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
 
+    const userAIConfig = await getUserAIConfig(session.user.id);
+
     // --- Step 1: Extract JD skills via LLM ---
     let jdExtracted: { required_skills?: unknown; preferred_skills?: unknown; minExperience?: unknown };
     try {
-      jdExtracted = await extractJobSkills(jobDescription);
+      jdExtracted = await extractJobSkills(jobDescription, userAIConfig);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[analyze] extractJobSkills failed:", msg);
@@ -176,6 +181,18 @@ export async function POST(request: NextRequest) {
     });
     const suggestions = suggestionsList.length > 0 ? suggestionsList.join(" | ") : null;
 
+    const scoreExplainability = buildScoreExplainability({
+      score,
+      keywordMatchPct,
+      missingHighCount,
+      missingMediumCount,
+      breakdown: matchResult.breakdown,
+    });
+
+    const learningMaterials = buildSkillLearningMaterials({
+      missingSkills: missingSkillsWithPriority,
+    });
+
     // 5f. Improvement Trend: fetch previous analysis for this resume
     const lastAnalysis = await prisma.resumeAnalysis.findFirst({
       where: { resumeId: resume.id },
@@ -237,6 +254,8 @@ export async function POST(request: NextRequest) {
       atsIssues,
       skillCoverage,
       improvementTrend,
+      scoreExplainability,
+      learningMaterials,
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);

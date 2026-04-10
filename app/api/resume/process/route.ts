@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { extractResumeData } from "@/lib/resumeExtractor";
 import { ensureSkillsWithEmbeddings } from "@/lib/skillStore";
+import { getUserAIConfig } from "@/lib/userAiConfig";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
@@ -54,7 +55,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const extracted = await extractResumeData(resume.rawText);
+    const userAIConfig = await getUserAIConfig(session.user.id);
+    const extracted = await extractResumeData(resume.rawText, userAIConfig);
     const extractedSkills = Array.isArray(extracted.skills) ? extracted.skills : [];
     const normalizedSkills = await ensureSkillsWithEmbeddings(extractedSkills, true);
 

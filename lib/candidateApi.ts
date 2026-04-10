@@ -49,6 +49,35 @@ export type MissingSkillResult = {
   priority: string;
 };
 
+export type ScoreExplainabilityComponent = {
+  key: "required" | "preferred" | "experience";
+  label: string;
+  coveragePct: number;
+  contributionPct: number;
+  detail: string;
+};
+
+export type ScoreExplainability = {
+  finalScorePct: number;
+  scoreBand: "strong" | "moderate" | "low";
+  components: ScoreExplainabilityComponent[];
+  highlights: string[];
+};
+
+export type LearningMaterialResource = {
+  title: string;
+  provider: string;
+  type: "playlist" | "course" | "docs" | "guide";
+  url: string;
+};
+
+export type SkillLearningMaterial = {
+  skillId: string;
+  skillName: string;
+  priority: string;
+  resources: LearningMaterialResource[];
+};
+
 export type AnalyzeResumeResponse = {
   analysisId: string;
   score: number;
@@ -60,9 +89,17 @@ export type AnalyzeResumeResponse = {
     requiredTotal: number;
     preferredMatched: number;
     preferredTotal: number;
+    requiredWeightEarned: number;
+    requiredWeightTotal: number;
+    preferredWeightEarned: number;
+    preferredWeightTotal: number;
+    rawScore: number;
+    totalWeight: number;
     experienceBonus: number;
   };
   partialSkillIds: string[];
+  scoreExplainability: ScoreExplainability;
+  learningMaterials: SkillLearningMaterial[];
 };
 
 export type ResumeAnalysisItem = {

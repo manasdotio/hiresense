@@ -1,4 +1,4 @@
-import { callLLM } from "./llm";
+import { callLLM, type LLMCallConfig } from "./llm";
 
 /**
  * Attempts to repair truncated/malformed JSON produced by local LLMs
@@ -41,7 +41,10 @@ function tryRepairJSON(raw: string): string {
   return repaired;
 }
 
-export async function extractResumeData(rawResumeText: string) {
+export async function extractResumeData(
+  rawResumeText: string,
+  aiConfig?: Partial<LLMCallConfig>
+) {
   const prompt = `
 Extract technical skills from this resume and evaluate its overall ATS-readiness.
 
@@ -72,7 +75,7 @@ Resume text:
 ${rawResumeText}
 `;
 
-  const raw = await callLLM(prompt);
+  const raw = await callLLM(prompt, aiConfig);
 
   if (!raw) {
     throw new Error("Empty response from LLM");

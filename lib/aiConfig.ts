@@ -6,6 +6,12 @@
 
 export type LLMProvider = "local" | "groq" | "openrouter";
 
+export const LLM_PROVIDERS: LLMProvider[] = ["local", "groq", "openrouter"];
+
+export function isValidLLMProvider(value: string): value is LLMProvider {
+  return LLM_PROVIDERS.includes(value as LLMProvider);
+}
+
 export interface AIConfig {
   provider: LLMProvider;
   /** Chat/LLM model for the active provider */

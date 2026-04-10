@@ -17,7 +17,7 @@
  *     present so callers get a clear error instead of a runtime crash later.
  */
 
-import { callLLM } from "./llm";
+import { callLLM, type LLMCallConfig } from "./llm";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -152,12 +152,15 @@ ${description}
 // Public API
 // ---------------------------------------------------------------------------
 
-export async function extractJobSkills(description: string): Promise<ExtractedSkills> {
+export async function extractJobSkills(
+  description: string,
+  aiConfig?: Partial<LLMCallConfig>
+): Promise<ExtractedSkills> {
   if (!description.trim()) {
     throw new Error("Job description is empty");
   }
 
-  const response = await callLLM(buildPrompt(description));
+  const response = await callLLM(buildPrompt(description), aiConfig);
 
   if (!response) {
     throw new Error("Empty response from LLM");

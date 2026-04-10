@@ -28,6 +28,18 @@ model User {
   createdAt DateTime @default(now())
 
   candidateProfile CandidateProfile?
+  aiConfig         UserAIConfig?
+}
+
+model UserAIConfig {
+  id        String   @id @default(nanoid())
+  userId    String   @unique
+  provider  String   @default("local")
+  model     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model CandidateProfile {
@@ -47,7 +59,7 @@ model Resume {
 
   atsScore        Float?
   atsFeedback     String?
-  sectionFeedback String?   // JSON blob: { skills, experience, projects, education }
+  sectionFeedback String? // JSON blob: { skills, experience, projects, education }
 
   resumeSkills ResumeSkill[]
   analyses     ResumeAnalysis[]
@@ -83,15 +95,15 @@ model JobDescription {
 }
 
 model ResumeAnalysis {
-  id               String         @id @default(nanoid())
+  id               String   @id @default(nanoid())
   resumeId         String
   jobDescriptionId String
   score            Float
   suggestions      String?
-  missingKeywords  String?   // pipe-separated list
-  atsIssues        String?   // pipe-separated list
-  skillCoverage    String?   // JSON blob
-  createdAt        DateTime       @default(now())
+  missingKeywords  String? // pipe-separated list
+  atsIssues        String? // pipe-separated list
+  skillCoverage    String? // JSON blob
+  createdAt        DateTime @default(now())
 
   resume         Resume         @relation(fields: [resumeId], references: [id], onDelete: Cascade)
   jobDescription JobDescription @relation(fields: [jobDescriptionId], references: [id], onDelete: Cascade)
@@ -99,7 +111,7 @@ model ResumeAnalysis {
 }
 
 model MissingSkill {
-  id         String         @id @default(nanoid())
+  id         String  @id @default(nanoid())
   analysisId String
   skillId    String
   priority   String?
